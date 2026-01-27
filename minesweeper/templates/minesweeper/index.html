@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Modern Minesweeper</title>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
     <style>
         :root {
             --bg-color: #f0f2f5;
@@ -40,10 +41,12 @@
             margin-bottom: 20px;
             font-weight: bold;
             font-size: 1.1rem;
+            min-width: 300px;
         }
 
         .board {
             display: grid;
+            /* cols 변수에 따라 그리드 칸 수를 동적으로 조절 */
             grid-template-columns: repeat({{ cols }}, var(--cell-size));
             gap: 4px;
             background-color: var(--cell-border);
@@ -66,11 +69,8 @@
         }
 
         .cell:hover:not(.revealed) { background-color: #f8f9fa; transform: scale(1.05); }
-
         .cell.revealed { background-color: var(--revealed-bg); cursor: default; }
-
         .cell.mine { background-color: var(--mine-bg); color: white; }
-
         .cell.flagged { color: #ff4d4f; }
 
         /* 숫자별 색상 */
@@ -90,36 +90,24 @@
             font-size: 1rem;
             transition: opacity 0.2s;
         }
-
         .btn:hover { opacity: 0.8; }
     </style>
 </head>
-<body>
-
-    <h1>💣 Minesweeper</h1>
+<body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'> <h1>💣 Minesweeper</h1>
 
     <div class="game-container">
-        <div class="status-bar">
-            <span>{% if game_over %}💥 게임 오버!{% elif won %}🎉 승리!{% else %}🚩 행운을 빌어요!{% endif %}</span>
+        <div class="status-bar" id="status-bar">
+            <span>
+                {% if game_over %}💥 게임 오버!
+                {% elif won %}🎉 승리!
+                {% else %}🚩 남은 깃발: {{ remaining_flags }}
+                {% endif %}
+            </span>
             <a href="{% url 'new_game' %}" style="text-decoration:none; color:#0984e3;">새 게임</a>
         </div>
 
-        <div class="board">
-            {% for row in board_data %}
-                {% for cell in row %}
-                    {% if cell.is_revealed %}
-                        <div class="cell revealed {% if cell.is_mine %}mine{% endif %} {% if cell.value %}color-{{ cell.value }}{% endif %}">
-                            {% if cell.is_mine %}💣{% else %}{{ cell.value }}{% endif %}
-                        </div>
-                    {% else %}
-                        <a href="{% url 'click' cell.row cell.col %}" 
-                           class="cell {% if cell.is_flagged %}flagged{% endif %}"
-                           oncontextmenu="event.preventDefault(); window.location.href='{% url 'flag' cell.row cell.col %}';">
-                            {% if cell.is_flagged %}🚩{% endif %}
-                        </a>
-                    {% endif %}
-                {% endfor %}
-            {% endfor %}
+        <div class="board" id="game-board">
+            {% include 'minesweeper/partials/board.html' %}
         </div>
     </div>
 
