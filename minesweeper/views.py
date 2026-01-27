@@ -1,5 +1,7 @@
 from django.shortcuts import render, redirect
+from django.template.loader import render_to_string
 from django.http import HttpResponse
+from django.urls import reverse
 import random
 
 # 공통 데이터 포맷팅 헬퍼 함수
@@ -48,7 +50,20 @@ def render_game_response(request):
         
     # HTMX 요청이면 조각(partial)만 리턴, 아니면 전체 페이지(index) 리턴
     if request.headers.get('HX-Request'):
-        return render(request, 'minesweeper/partials/board.html', context)
+        board_html = render_to_string('minesweeper/partials/board.html', context)
+        status_text = (
+            "💥 게임 오버!" if context['game_over'] else
+            "🎉 승리!" if context['won'] else
+            f"🚩 남은 깃발: {context['remaining_flags']}"
+        )
+        new_game_url = reverse('new_game')
+        status_html = f'''
+        <div id="status-bar" hx-swap-oob="innerHTML">
+            <span>{status_text}</span>
+            <a href="{new_game_url}" style="text-decoration:none; color:var(--link-color);">새 게임</a>
+        </div>
+        '''
+        return HttpResponse(board_html + status_html)
     return render(request, 'minesweeper/index.html', context)
 
 

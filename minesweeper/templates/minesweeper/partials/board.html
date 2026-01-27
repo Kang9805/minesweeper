@@ -16,6 +16,9 @@
     {% endfor %}
 {% endfor %}
 
+{# 🚩 HTMX 클릭 요청일 때만 상단 바를 갱신하는 OOB 조각을 보냅니다 #}
+{# 처음 index.html 로딩 시에는 이 부분이 렌더링되지 않아 중복을 방지합니다 #}
+{% if request.headers.HX_Request %}
 <div id="status-bar" hx-swap-oob="true">
     <span>
         {% if game_over %}💥 게임 오버!
@@ -25,3 +28,4 @@
     </span>
     <a href="{% url 'new_game' %}" style="text-decoration:none; color:#0984e3;">새 게임</a>
 </div>
+{% endif %}
