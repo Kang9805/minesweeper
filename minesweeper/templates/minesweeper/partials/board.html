@@ -2,7 +2,7 @@
     {% for cell in row %}
         {% if cell.is_revealed %}
             <div class="cell revealed {% if cell.is_mine %}mine{% endif %} {% if cell.value %}color-{{ cell.value }}{% endif %}">
-                {% if cell.is_mine %}💣{% else %}{{ cell.value|default:"" }}{% endif %}
+                {% if cell.is_mine %}💣{% else %}{{ cell.value }}{% endif %}
             </div>
         {% else %}
             <div class="cell {% if cell.is_flagged %}flagged{% endif %}"
@@ -16,7 +16,7 @@
     {% endfor %}
 {% endfor %}
 
-<div id="status-bar" hx-swap-oob="true">
+<div id="status-bar" hx-swap-oob="true" class="status-bar">
     <span>
         {% if game_over %}💥 게임 오버!
         {% elif won %}🎉 승리!

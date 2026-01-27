@@ -16,7 +16,7 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            font-family: -apple-system, sans-serif;
             background-color: var(--bg-color);
             display: flex;
             flex-direction: column;
@@ -26,13 +26,12 @@
             margin: 0;
         }
 
-        h1 { color: #1a1a1a; margin-bottom: 20px; }
-
         .game-container {
             background: white;
             padding: 25px;
             border-radius: 15px;
             box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            min-width: fit-content; /* 보드 크기에 맞춤 */
         }
 
         .status-bar {
@@ -41,17 +40,18 @@
             margin-bottom: 20px;
             font-weight: bold;
             font-size: 1.1rem;
-            min-width: 300px;
         }
 
         .board {
             display: grid;
-            /* cols 변수에 따라 그리드 칸 수를 동적으로 조절 */
+            /* 🚩 cols 변수에 맞춰 그리드 유지 */
             grid-template-columns: repeat({{ cols }}, var(--cell-size));
             gap: 4px;
             background-color: var(--cell-border);
             border: 4px solid var(--cell-border);
             border-radius: 8px;
+            /* 🚩 OOB 태그가 불필요하게 영역을 차지하지 않도록 설정 */
+            position: relative;
         }
 
         .cell {
@@ -63,9 +63,8 @@
             justify-content: center;
             font-weight: 800;
             cursor: pointer;
-            transition: all 0.2s;
             user-select: none;
-            text-decoration: none;
+            transition: transform 0.1s;
         }
 
         .cell:hover:not(.revealed) { background-color: #f8f9fa; transform: scale(1.05); }
@@ -73,36 +72,17 @@
         .cell.mine { background-color: var(--mine-bg); color: white; }
         .cell.flagged { color: #ff4d4f; }
 
-        /* 숫자별 색상 */
-        .color-1 { color: #0984e3; } .color-2 { color: #00b894; }
-        .color-3 { color: #d63031; } .color-4 { color: #6c5ce7; }
-        .color-5 { color: #e17055; } .color-6 { color: #00cec9; }
-        .color-7 { color: #000000; } .color-8 { color: #636e72; }
-
-        .btn {
-            margin-top: 25px;
-            padding: 10px 25px;
-            background: #1a1a1a;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 1rem;
-            transition: opacity 0.2s;
-        }
-        .btn:hover { opacity: 0.8; }
+        /* 숫자 색상 생략 (기존 것 유지) */
+        .color-1 { color: #0984e3; } .color-2 { color: #00b894; } .color-3 { color: #d63031; }
     </style>
 </head>
-<body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'> <h1>💣 Minesweeper</h1>
+<body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
+
+    <h1>💣 Minesweeper</h1>
 
     <div class="game-container">
         <div class="status-bar" id="status-bar">
-            <span>
-                {% if game_over %}💥 게임 오버!
-                {% elif won %}🎉 승리!
-                {% else %}🚩 남은 깃발: {{ remaining_flags }}
-                {% endif %}
-            </span>
+            <span>🚩 남은 깃발: {{ remaining_flags }}</span>
             <a href="{% url 'new_game' %}" style="text-decoration:none; color:#0984e3;">새 게임</a>
         </div>
 
@@ -110,8 +90,6 @@
             {% include 'minesweeper/partials/board.html' %}
         </div>
     </div>
-
-    <p style="margin-top: 15px; color: #666; font-size: 0.9rem;">Tip: 오른쪽 클릭으로 🚩를 꽂으세요!</p>
 
 </body>
 </html>
