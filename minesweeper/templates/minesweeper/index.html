@@ -13,7 +13,9 @@
             --cell-border: #dee2e6;
             --revealed-bg: #e9ecef;
             --mine-bg: #ff4d4f;
-            --link-color: #0984e3; /* 중복 제거를 위한 변수 */
+            --link-color: #0984e3;
+            --primary-color: #667eea;
+            --primary-dark: #764ba2;
         }
 
         body {
@@ -25,6 +27,7 @@
             justify-content: center;
             min-height: 100vh;
             margin: 0;
+            padding: 20px;
         }
 
         .game-container {
@@ -33,6 +36,91 @@
             border-radius: 15px;
             box-shadow: 0 10px 25px rgba(0,0,0,0.1);
             min-width: fit-content;
+            max-width: 600px;
+            width: 100%;
+        }
+
+        .difficulty-form {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+            padding: 25px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            color: white;
+        }
+
+        .difficulty-form h2 {
+            margin: 0 0 20px 0;
+            font-size: 1.3rem;
+            font-weight: 600;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 5px;
+            opacity: 0.95;
+        }
+
+        .form-group input {
+            padding: 10px 12px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .form-group input::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: white;
+            background: rgba(255, 255, 255, 0.25);
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+        }
+
+        .form-row-button {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .btn-start {
+            flex: 1;
+            padding: 12px 20px;
+            background: white;
+            color: var(--primary-color);
+            border: none;
+            border-radius: 6px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 1rem;
+        }
+
+        .btn-start:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-start:active {
+            transform: translateY(0);
         }
 
         .status-bar {
@@ -45,12 +133,17 @@
 
         .board {
             display: grid;
-            grid-template-columns: repeat({{ cols }}, var(--cell-size));
             gap: 4px;
             background-color: var(--cell-border);
             border: 4px solid var(--cell-border);
             border-radius: 8px;
             position: relative;
+        }
+        .board-wrap {
+            display: flex;
+            justify-content: center;
+            width: 100%;
+            margin-bottom: 12px;
         }
 
         .cell {
@@ -79,19 +172,45 @@
 
     <h1>💣 Minesweeper</h1>
 
-    <div class="game-container">
-        <div class="status-bar" id="status-bar">
-            <span>
-                {% if game_over %}💥 게임 오버!
-                {% elif won %}🎉 승리!
-                {% else %}🚩 남은 깃발: {{ remaining_flags }}
-                {% endif %}
-            </span>
-            <a href="{% url 'new_game' %}" style="text-decoration:none; color:var(--link-color);">새 게임</a>
+    <div class="game-container" id="game-container">
+        <!-- 커스텀 난이도 설정 폼 -->
+        <form class="difficulty-form" hx-post="{% url 'new_game' %}" hx-target="#game-container" hx-swap="innerHTML">
+            {% csrf_token %}
+            <h2>🎯 난이도 선택</h2>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="rows">가로 (rows)</label>
+                    <input type="number" id="rows" name="rows" min="5" max="30" value="{{ rows }}" required>
+                </div>
+                <div class="form-group">
+                    <label for="cols">세로 (cols)</label>
+                    <input type="number" id="cols" name="cols" min="5" max="30" value="{{ cols }}" required>
+                </div>
+                <div class="form-group">
+                    <label for="mines">지뢰 개수</label>
+                    <input type="number" id="mines" name="mines" min="1" max="900" value="{{ mines }}" required>
+                </div>
+            </div>
+            <div class="form-row-button">
+                <button type="submit" class="btn-start">🚀 게임 시작</button>
+            </div>
+        </form>
+        <div id="status-bar" class="status-bar" {% if not board_data %}style="display:none;"{% endif %}>
+            {% if board_data %}
+                <span>
+                    {% if game_over %}💥 게임 오버!
+                    {% elif won %}🎉 승리!
+                    {% else %}🚩 남은 깃발: {{ remaining_flags }}
+                    {% endif %}
+                </span>
+                <a href="{% url 'new_game' %}" style="text-decoration:none; color:var(--link-color);">새 게임</a>
+            {% endif %}
         </div>
 
-        <div class="board" id="game-board">
-            {% include 'minesweeper/partials/board.html' %}
+        <div class="board-wrap" id="board-area">
+            <div class="board" id="game-board" {% if not board_data %}style="display:none;"{% else %}style="grid-template-columns: repeat({{ cols }}, var(--cell-size));"{% endif %}>
+                {% include 'minesweeper/partials/board.html' %}
+            </div>
         </div>
     </div>
 

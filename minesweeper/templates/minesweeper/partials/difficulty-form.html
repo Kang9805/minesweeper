@@ -1,0 +1,21 @@
+<form class="difficulty-form" hx-post="{% url 'new_game' %}" hx-target="#game-container" hx-swap="innerHTML">
+    {% csrf_token %}
+    <h2>🎯 난이도 선택</h2>
+    <div class="form-row">
+        <div class="form-group">
+            <label for="rows">가로 (rows)</label>
+            <input type="number" id="rows" name="rows" min="5" max="30" value="{{ rows }}" required>
+        </div>
+        <div class="form-group">
+            <label for="cols">세로 (cols)</label>
+            <input type="number" id="cols" name="cols" min="5" max="30" value="{{ cols }}" required>
+        </div>
+        <div class="form-group">
+            <label for="mines">지뢰 개수</label>
+            <input type="number" id="mines" name="mines" min="1" max="900" value="{{ mines }}" required>
+        </div>
+    </div>
+    <div class="form-row-button">
+        <button type="submit" class="btn-start">🚀 게임 시작</button>
+    </div>
+</form>

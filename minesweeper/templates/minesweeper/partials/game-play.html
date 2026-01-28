@@ -1,0 +1,8 @@
+{% comment %}Play view: status bar + board wrapper{% endcomment %}
+{% include 'minesweeper/partials/status-bar.html' %}
+
+<div class="board-wrap" id="board-area">
+    <div class="board" id="game-board" style="grid-template-columns: repeat({{ cols }}, var(--cell-size));">
+        {% include 'minesweeper/partials/board.html' %}
+    </div>
+</div>

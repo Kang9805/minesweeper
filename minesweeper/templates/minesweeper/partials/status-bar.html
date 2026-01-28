@@ -1,0 +1,9 @@
+<div class="status-bar" id="status-bar">
+    <span>
+        {% if game_over %}💥 게임 오버!
+        {% elif won %}🎉 승리!
+        {% else %}🚩 남은 깃발: {{ remaining_flags }}
+        {% endif %}
+    </span>
+    <a href="{% url 'new_game' %}" style="text-decoration:none; color:var(--link-color);">새 게임</a>
+</div>
