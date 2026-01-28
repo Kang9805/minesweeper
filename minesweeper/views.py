@@ -39,6 +39,7 @@ def get_game_context(request):
         'won': request.session.get('won', False),
         'rows': rows,
         'cols': cols,
+        'mines': mines,
         'remaining_flags': mines - current_flags,
     }
 
@@ -48,29 +49,33 @@ def render_game_response(request):
     if not context:
         return redirect('new_game')
         
-    # HTMX 요청이면 조각(partial)만 리턴, 아니면 전체 페이지(index) 리턴
-    if request.headers.get('HX-Request'):
-        board_html = render_to_string('minesweeper/partials/board.html', context)
-        status_text = (
-            "💥 게임 오버!" if context['game_over'] else
-            "🎉 승리!" if context['won'] else
-            f"🚩 남은 깃발: {context['remaining_flags']}"
-        )
-        new_game_url = reverse('new_game')
-        status_html = f'''
-        <div id="status-bar" hx-swap-oob="innerHTML">
-            <span>{status_text}</span>
-            <a href="{new_game_url}" style="text-decoration:none; color:var(--link-color);">새 게임</a>
-        </div>
-        '''
-        return HttpResponse(board_html + status_html)
-    return render(request, 'minesweeper/index.html', context)
+    # 게임 보드 렌더링
+    board_html = render_to_string('minesweeper/partials/board.html', context)
+    
+    # 상태 바를 OOB로 업데이트
+    status_bar = render_to_string('minesweeper/partials/status-bar.html', context)
+    # inject hx-swap-oob attribute so HTMX updates the existing status-bar in-place
+    if '<div' in status_bar:
+        status_bar_oob = status_bar.replace('<div', '<div hx-swap-oob="innerHTML"', 1)
+    else:
+        status_bar_oob = status_bar
+
+    return HttpResponse(board_html + status_bar_oob)
 
 
 def index(request):
     context = get_game_context(request)
     if not context:
-        return redirect('new_game')
+        # 세션이 없으면 기본값으로 초기화
+        context = {
+            'board_data': [],
+            'rows': 10,
+            'cols': 10,
+            'mines': 10,
+            'remaining_flags': 10,
+            'game_over': False,
+            'won': False,
+        }
     return render(request, 'minesweeper/index.html', context)
 
 def new_game(request, rows=10, cols=10, mines=10):
@@ -104,6 +109,13 @@ def new_game(request, rows=10, cols=10, mines=10):
     request.session['rows'] = rows
     request.session['cols'] = cols
     request.session['mines'] = mines
+    
+    # HTMX 요청이면 전체 in-game 컨테이너를 반환하여 화면 전환합니다
+    if request.headers.get('HX-Request'):
+        context = get_game_context(request)
+        # render full in-game partial (status bar + board area)
+        play_html = render_to_string('minesweeper/partials/game-play.html', context)
+        return HttpResponse(play_html)
     
     return redirect('index')
 
@@ -153,6 +165,28 @@ def flag(request, row, col):
             flagged[row][col] = True
 
     request.session['flagged'] = flagged
+
+    # 추가 승리 체크: 모든 비지뢰 칸이 공개되었거나 모든 지뢰가 정확히 깃발로 표시되었을 때
+    rows = request.session.get('rows')
+    cols = request.session.get('cols')
+    board = request.session.get('board')
+    # 1) 공개된 칸 수로 승리 판정
+    revealed_count = sum(r.count(True) for r in request.session['revealed'])
+    if revealed_count == (rows * cols) - mines:
+        request.session['won'] = True
+
+    # 2) 모든 지뢰가 깃발로 표시되었는지 확인
+    all_mines_flagged = True
+    for r in range(rows):
+        for c in range(cols):
+            if board[r][c] == -1 and not request.session['flagged'][r][c]:
+                all_mines_flagged = False
+                break
+        if not all_mines_flagged:
+            break
+    if all_mines_flagged and sum(row.count(True) for row in request.session['flagged']) == mines:
+        request.session['won'] = True
+
     return render_game_response(request)
 
 def reset(request):
