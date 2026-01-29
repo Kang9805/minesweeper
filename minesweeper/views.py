@@ -139,7 +139,7 @@ def click(request, row, col):
                 if board[r][c] == -1:
                     revealed[r][c] = True
     else:
-        reveal_logic(board, revealed, row, col, rows, cols)
+        reveal_logic(board, revealed, flagged, row, col, rows, cols)
         
         # 승리 조건 체크
         revealed_count = sum(row.count(True) for row in revealed)
@@ -194,8 +194,9 @@ def reset(request):
     return redirect('index')
 
 # 재귀적으로 빈 칸을 열어주는 로직 (함수명 중복 방지를 위해 _logic 추가)
-def reveal_logic(board, revealed, row, col, rows, cols):
-    if revealed[row][col]:
+def reveal_logic(board, revealed, flagged, row, col, rows, cols):
+    # 이미 공개되었거나 깃발이 꽂혀있으면 무시
+    if revealed[row][col] or flagged[row][col]:
         return
     revealed[row][col] = True
     if board[row][col] == 0:
@@ -203,4 +204,4 @@ def reveal_logic(board, revealed, row, col, rows, cols):
             for dc in [-1, 0, 1]:
                 nr, nc = row + dr, col + dc
                 if 0 <= nr < rows and 0 <= nc < cols:
-                    reveal_logic(board, revealed, nr, nc, rows, cols)
+                    reveal_logic(board, revealed, flagged, nr, nc, rows, cols)
