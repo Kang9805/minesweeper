@@ -21,6 +21,12 @@
             --tip-color: #666;
         }
 
+        @media (max-width: 768px) {
+            :root {
+                --cell-size: clamp(24px, 8vw, 36px);
+            }
+        }
+
         body.dark-mode {
             --bg-color: #1a1a2e;
             --cell-bg: #2d2d44;
@@ -49,6 +55,13 @@
             transition: background-color 0.3s, color 0.3s;
         }
 
+        @media (max-width: 768px) {
+            body {
+                padding: 12px;
+                justify-content: flex-start;
+            }
+        }
+
         .game-container {
             background: var(--container-bg);
             padding: 25px;
@@ -58,6 +71,13 @@
             max-width: 600px;
             width: 100%;
             transition: background-color 0.3s;
+        }
+
+        @media (max-width: 768px) {
+            .game-container {
+                padding: 16px;
+                max-width: 100%;
+            }
         }
 
         .difficulty-form {
@@ -164,6 +184,15 @@
             justify-content: center;
             width: 100%;
             margin-bottom: 12px;
+        }
+
+        @media (max-width: 768px) {
+            .board-wrap {
+                justify-content: flex-start;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                padding-bottom: 6px;
+            }
         }
 
         .cell {
