@@ -16,11 +16,29 @@
             --link-color: #0984e3;
             --primary-color: #667eea;
             --primary-dark: #764ba2;
+            --text-color: #333;
+            --container-bg: #ffffff;
+            --tip-color: #666;
+        }
+
+        body.dark-mode {
+            --bg-color: #1a1a2e;
+            --cell-bg: #2d2d44;
+            --cell-border: #3d3d5c;
+            --revealed-bg: #25253a;
+            --mine-bg: #ff4d4f;
+            --link-color: #74b9ff;
+            --primary-color: #667eea;
+            --primary-dark: #764ba2;
+            --text-color: #e0e0e0;
+            --container-bg: #16213e;
+            --tip-color: #999;
         }
 
         body {
             font-family: -apple-system, sans-serif;
             background-color: var(--bg-color);
+            color: var(--text-color);
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -28,16 +46,18 @@
             min-height: 100vh;
             margin: 0;
             padding: 20px;
+            transition: background-color 0.3s, color 0.3s;
         }
 
         .game-container {
-            background: white;
+            background: var(--container-bg);
             padding: 25px;
             border-radius: 15px;
             box-shadow: 0 10px 25px rgba(0,0,0,0.1);
             min-width: fit-content;
             max-width: 600px;
             width: 100%;
+            transition: background-color 0.3s;
         }
 
         .difficulty-form {
@@ -166,9 +186,33 @@
 
         .color-1 { color: #0984e3; } .color-2 { color: #00b894; } .color-3 { color: #d63031; }
         .color-4 { color: #6c5ce7; } .color-5 { color: #e17055; } .color-6 { color: #00cec9; }
+
+        .dark-mode-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--container-bg);
+            border: 2px solid var(--cell-border);
+            border-radius: 50px;
+            padding: 10px 15px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            transition: all 0.3s;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            z-index: 1000;
+        }
+
+        .dark-mode-toggle:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.15);
+        }
     </style>
 </head>
 <body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
+
+    <button class="dark-mode-toggle" onclick="toggleDarkMode()" id="theme-toggle">
+        <span id="theme-icon">🌙</span>
+    </button>
 
     <h1>💣 Minesweeper</h1>
 
@@ -214,7 +258,33 @@
         </div>
     </div>
 
-    <p style="margin-top: 15px; color: #666; font-size: 0.9rem;">Tip: 오른쪽 클릭으로 🚩를 꽂으세요!</p>
+    <p style="margin-top: 15px; color: var(--tip-color); font-size: 0.9rem;">Tip: 오른쪽 클릭으로 🚩를 꽂으세요!</p>
+
+    <script>
+        // 다크모드 초기화
+        function initDarkMode() {
+            const isDarkMode = localStorage.getItem('darkMode') === 'true';
+            if (isDarkMode) {
+                document.body.classList.add('dark-mode');
+                document.getElementById('theme-icon').textContent = '☀️';
+            }
+        }
+
+        // 다크모드 토글
+        function toggleDarkMode() {
+            const body = document.body;
+            const icon = document.getElementById('theme-icon');
+            
+            body.classList.toggle('dark-mode');
+            const isDarkMode = body.classList.contains('dark-mode');
+            
+            localStorage.setItem('darkMode', isDarkMode);
+            icon.textContent = isDarkMode ? '☀️' : '🌙';
+        }
+
+        // 페이지 로드 시 다크모드 설정 적용
+        initDarkMode();
+    </script>
 
 </body>
 </html>
