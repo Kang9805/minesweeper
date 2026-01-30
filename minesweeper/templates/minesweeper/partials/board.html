@@ -10,10 +10,72 @@
                  data-col="{{ cell.col }}"
                  hx-get="{% url 'click' cell.row cell.col %}"
                  hx-target="#game-board"
-                 hx-swap="innerHTML"
-                 oncontextmenu="event.preventDefault(); htmx.ajax('GET', '{% url 'flag' cell.row cell.col %}', {target:'#game-board', swap:'innerHTML'});">
+                 hx-swap="innerHTML">
                 {% if cell.is_flagged %}🚩{% endif %}
             </div>
         {% endif %}
     {% endfor %}
 {% endfor %}
+
+<style>
+    .cell {
+        user-select: none;
+        -webkit-user-select: none;
+        -webkit-touch-callout: none;
+        -moz-user-select: none;
+    }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const cells = document.querySelectorAll('.cell:not(.revealed)');
+    
+    cells.forEach(cell => {
+        let pressTimer;
+        let isLongPress = false;
+        
+        // 롱프레스 시작
+        cell.addEventListener('touchstart', function(e) {
+            isLongPress = false;
+            pressTimer = setTimeout(() => {
+                isLongPress = true;
+                e.preventDefault();
+                
+                // 깃발 토글
+                const row = cell.dataset.row;
+                const col = cell.dataset.col;
+                htmx.ajax('GET', `/flag/${row}/${col}/`, {
+                    target: '#game-board',
+                    swap: 'innerHTML'
+                });
+            }, 500);
+        }, { passive: true });
+        
+        // 롱프레스 취소 (터치 이동)
+        cell.addEventListener('touchmove', function() {
+            clearTimeout(pressTimer);
+            isLongPress = false;
+        }, { passive: true });
+        
+        // 롱프레스 종료
+        cell.addEventListener('touchend', function(e) {
+            clearTimeout(pressTimer);
+            // 롱프레스 성공했으면 일반 클릭 방지
+            if (isLongPress) {
+                e.preventDefault();
+            }
+        }, { passive: true });
+        
+        // PC 우클릭
+        cell.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+            const row = cell.dataset.row;
+            const col = cell.dataset.col;
+            htmx.ajax('GET', `/flag/${row}/${col}/`, {
+                target: '#game-board',
+                swap: 'innerHTML'
+            });
+        });
+    });
+});
+</script>
