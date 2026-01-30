@@ -11,21 +11,53 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
 from pathlib import Path
+import os
+from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# .env 파일 로드
+env_path = BASE_DIR / '.env'
+if env_path.exists():
+    load_dotenv(env_path)
 
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure--$nyr7(l85kdnym-56qq4op*ht=4-r-s+bsd8kt(bs1nq@2$f3'
+SECRET_KEY = os.environ.get('SECRET_KEY')
+
+# 로컬 개발 환경에서만 fallback 허용
+if not SECRET_KEY:
+    if os.environ.get('DEBUG', 'False') == 'True':
+        SECRET_KEY = 'local-dev-key-only-for-development'
+    else:
+        raise ValueError("프로덕션 환경에서는 SECRET_KEY 환경 변수가 필수입니다!")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
-ALLOWED_HOSTS = ['*']
+# Vercel 환경 감지
+VERCEL_ENV = os.environ.get('VERCEL_ENV')
+
+if VERCEL_ENV:  # Vercel 프로덕션 환경
+    ALLOWED_HOSTS = [
+        'min2sweeper.vercel.app',
+        '.vercel.app',
+    ]
+    # 프로덕션 보안 설정
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_HSTS_SECONDS = 31536000
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_BROWSER_XSS_FILTER = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    X_FRAME_OPTIONS = 'DENY'
+else:  # 로컬 개발 환경
+    ALLOWED_HOSTS = ['localhost', '127.0.0.1', '[::1]']
 
 
 # Application definition

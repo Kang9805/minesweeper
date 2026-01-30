@@ -10,3 +10,8 @@ wheels/
 .venv
 .DS_Store
 db.sqlite3
+
+# Environment variables
+.env
+.env.local
+.env.*.local
