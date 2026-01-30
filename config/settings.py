@@ -12,15 +12,20 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 
 from pathlib import Path
 import os
-from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# .env 파일 로드
-env_path = BASE_DIR / '.env'
-if env_path.exists():
-    load_dotenv(env_path)
+# .env 파일 로드 (로컬 개발용만)
+# Vercel 환경에서는 .env 파일이 없으므로 스킵
+try:
+    from dotenv import load_dotenv
+    env_path = BASE_DIR / '.env'
+    if env_path.exists():
+        load_dotenv(env_path)
+except ImportError:
+    # Vercel 환경: python-dotenv 미설치 시 무시
+    pass
 
 
 # Quick-start development settings - unsuitable for production
