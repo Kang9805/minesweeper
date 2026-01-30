@@ -326,9 +326,62 @@
         </div>
     </div>
 
-    <p style="margin-top: 15px; color: var(--tip-color); font-size: 0.9rem;">Tip: 오른쪽 클릭으로 🚩를 꽂으세요!</p>
+    <p style="margin-top: 15px; color: var(--tip-color); font-size: 0.9rem;" id="tip-text">Tip: 오른쪽 클릭으로 🚩를 꽂으세요!</p>
 
     <script>
+        // 모바일 환경 감지
+        function isMobile() {
+            return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        }
+
+        // Tip 메시지 업데이트
+        if (isMobile()) {
+            document.getElementById('tip-text').textContent = 'Tip: 셀을 꾹 눌러서 🚩를 꽂으세요!';
+        }
+
+        // 롱프레스 기능 (모바일)
+        document.addEventListener('DOMContentLoaded', function() {
+            const cells = document.querySelectorAll('.cell:not(.revealed)');
+            let pressTimers = new Map();
+
+            cells.forEach(cell => {
+                let touchStartTime = 0;
+
+                cell.addEventListener('touchstart', function(e) {
+                    touchStartTime = Date.now();
+                    const row = this.dataset.row;
+                    const col = this.dataset.col;
+                    
+                    const timer = setTimeout(() => {
+                        e.preventDefault();
+                        // 깃발 토글
+                        htmx.ajax('GET', `/flag/${row}/${col}/`, {
+                            target: '#game-board',
+                            swap: 'innerHTML'
+                        });
+                    }, 500); // 500ms 롱프레스
+                    
+                    pressTimers.set(cell, timer);
+                });
+
+                cell.addEventListener('touchend', function(e) {
+                    const timer = pressTimers.get(this);
+                    if (timer) {
+                        clearTimeout(timer);
+                        pressTimers.delete(this);
+                    }
+                });
+
+                cell.addEventListener('touchmove', function(e) {
+                    const timer = pressTimers.get(this);
+                    if (timer) {
+                        clearTimeout(timer);
+                        pressTimers.delete(this);
+                    }
+                });
+            });
+        });
+
         // 다크모드 초기화
         function initDarkMode() {
             const isDarkMode = localStorage.getItem('darkMode') === 'true';

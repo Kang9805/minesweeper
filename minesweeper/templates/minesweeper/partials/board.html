@@ -6,6 +6,8 @@
             </div>
         {% else %}
             <div class="cell {% if cell.is_flagged %}flagged{% endif %}"
+                 data-row="{{ cell.row }}"
+                 data-col="{{ cell.col }}"
                  hx-get="{% url 'click' cell.row cell.col %}"
                  hx-target="#game-board"
                  hx-swap="innerHTML"
