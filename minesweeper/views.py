@@ -66,13 +66,13 @@ def render_game_response(request):
 def index(request):
     context = get_game_context(request)
     if not context:
-        # 세션이 없으면 기본값으로 초기화
+        # 세션이 없으면 세션에 저장된 난이도 값 또는 기본값으로 초기화
         context = {
             'board_data': [],
-            'rows': 10,
-            'cols': 10,
-            'mines': 10,
-            'remaining_flags': 10,
+            'rows': request.session.get('rows', 10),
+            'cols': request.session.get('cols', 10),
+            'mines': request.session.get('mines', 10),
+            'remaining_flags': request.session.get('mines', 10),
             'game_over': False,
             'won': False,
         }
