@@ -4,6 +4,13 @@ from django.http import HttpResponse
 from django.urls import reverse
 import random
 
+# 난이도별 설정
+DIFFICULTY_SETTINGS = {
+    'easy': {'rows': 8, 'cols': 8, 'mines': 10},
+    'medium': {'rows': 12, 'cols': 12, 'mines': 30},
+    'hard': {'rows': 16, 'cols': 16, 'mines': 40},
+}
+
 # 공통 데이터 포맷팅 헬퍼 함수
 def get_game_context(request):
     if 'board' not in request.session:
@@ -78,8 +85,15 @@ def index(request):
         }
     return render(request, 'minesweeper/index.html', context)
 
-def new_game(request, rows=10, cols=10, mines=10):
-    if request.method == 'POST':
+def new_game(request, difficulty=None, rows=10, cols=10, mines=10):
+    # 난이도로부터 설정 로드
+    if difficulty and difficulty in DIFFICULTY_SETTINGS:
+        settings = DIFFICULTY_SETTINGS[difficulty]
+        rows = settings['rows']
+        cols = settings['cols']
+        mines = settings['mines']
+    # POST 요청으로부터 커스텀 설정 로드 (폼 제출)
+    elif request.method == 'POST':
         rows = int(request.POST.get('rows', 10))
         cols = int(request.POST.get('cols', 10))
         mines = int(request.POST.get('mines', 10))
@@ -109,6 +123,7 @@ def new_game(request, rows=10, cols=10, mines=10):
     request.session['rows'] = rows
     request.session['cols'] = cols
     request.session['mines'] = mines
+    request.session['difficulty'] = difficulty or 'custom'
     
     # HTMX 요청이면 전체 in-game 컨테이너를 반환하여 화면 전환합니다
     if request.headers.get('HX-Request'):
