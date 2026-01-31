@@ -1,6 +1,33 @@
+<div class="quick-start-section">
+    <h2>🚀 퀵 스타트</h2>
+    <div class="difficulty-buttons">
+        <button type="button" 
+                class="difficulty-btn"
+                hx-get="{% url 'new_game_difficulty' 'easy' %}"
+                hx-target="#game-container"
+                hx-swap="innerHTML">
+            초급<br><small>8×8</small>
+        </button>
+        <button type="button" 
+                class="difficulty-btn"
+                hx-get="{% url 'new_game_difficulty' 'medium' %}"
+                hx-target="#game-container"
+                hx-swap="innerHTML">
+            중급<br><small>12×12</small>
+        </button>
+        <button type="button" 
+                class="difficulty-btn"
+                hx-get="{% url 'new_game_difficulty' 'hard' %}"
+                hx-target="#game-container"
+                hx-swap="innerHTML">
+            고급<br><small>16×16</small>
+        </button>
+    </div>
+</div>
+
 <form class="difficulty-form" hx-post="{% url 'new_game' %}" hx-target="#game-container" hx-swap="innerHTML">
     {% csrf_token %}
-    <h2>🎯 난이도 선택</h2>
+    <h2>🎯 커스텀 설정</h2>
     <div class="form-row">
         <div class="form-group">
             <label for="rows">가로 (rows)</label>

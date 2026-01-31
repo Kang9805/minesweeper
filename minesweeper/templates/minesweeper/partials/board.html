@@ -18,6 +18,37 @@
 {% endfor %}
 
 <style>
+    .difficulty-buttons {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+
+    .difficulty-btn {
+        padding: 10px 20px;
+        font-size: 16px;
+        border: 2px solid #667eea;
+        border-radius: 6px;
+        cursor: pointer;
+        background-color: #667eea;
+        color: white;
+        font-weight: 600;
+        transition: all 0.3s;
+    }
+
+    .difficulty-btn:hover {
+        background-color: #764ba2;
+        border-color: #764ba2;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+
+    .difficulty-btn:active {
+        transform: translateY(0);
+    }
+
     .cell {
         user-select: none;
         -webkit-user-select: none;

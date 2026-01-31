@@ -104,6 +104,36 @@
             color: white;
         }
 
+        .quick-start-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 12px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            color: white;
+            min-width: 500px;
+        }
+
+        .quick-start-section h2 {
+            margin: 0 0 20px 0;
+            font-size: 1.3rem;
+            font-weight: 600;
+        }
+
+        @media (max-width: 768px) {
+            .quick-start-section {
+                padding: 18px;
+                margin-bottom: 20px;
+                min-width: auto;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .quick-start-section {
+                padding: 14px;
+                margin-bottom: 15px;
+            }
+        }
+
         @media (max-width: 768px) {
             .difficulty-form {
                 padding: 18px;
@@ -123,6 +153,37 @@
             margin: 0 0 20px 0;
             font-size: 1.3rem;
             font-weight: 600;
+        }
+
+        .difficulty-buttons {
+            display: flex;
+            gap: 25px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        .difficulty-btn {
+            padding: 16px 40px;
+            font-size: 18px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 6px;
+            cursor: pointer;
+            background-color: rgba(255, 255, 255, 0.2);
+            color: white;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .difficulty-btn:hover {
+            background-color: rgba(255, 255, 255, 0.35);
+            border-color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .difficulty-btn:active {
+            transform: translateY(0);
         }
 
         .form-row {
