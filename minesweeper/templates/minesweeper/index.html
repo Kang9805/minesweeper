@@ -273,6 +273,12 @@
             gap: 10px;
         }
 
+        .status-actions {
+            display: inline-flex;
+            gap: 12px;
+            align-items: center;
+        }
+
         @media (max-width: 480px) {
             .status-bar {
                 font-size: 0.95rem;
@@ -353,39 +359,110 @@
             transform: scale(1.1);
             box-shadow: 0 6px 16px rgba(0,0,0,0.15);
         }
+
+        .dark-mode-toggle:focus-visible,
+        .difficulty-btn:focus-visible,
+        .btn-start:focus-visible,
+        .status-bar a:focus-visible {
+            outline: 3px solid #ffd166;
+            outline-offset: 3px;
+            border-radius: 8px;
+        }
+
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+
+        #game-container.htmx-swapping {
+            opacity: 0.2;
+            transition: opacity 0.15s ease;
+        }
+
+        #game-container.htmx-settling {
+            opacity: 1;
+            transition: opacity 0.2s ease;
+        }
+
+        .htmx-added {
+            animation: fadeInUp 0.2s ease;
+        }
+
+        #game-board .htmx-added,
+        .board .htmx-added {
+            animation: none;
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .confetti-container {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            overflow: hidden;
+            z-index: 2000;
+        }
+
+        .confetti-piece {
+            position: absolute;
+            width: 8px;
+            height: 12px;
+            opacity: 0.9;
+            animation: confetti-fall linear forwards;
+        }
+
+        @keyframes confetti-fall {
+            from { transform: translateY(-10vh) rotate(0deg); }
+            to { transform: translateY(110vh) rotate(360deg); }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .htmx-added {
+                animation: none;
+            }
+            #game-container.htmx-swapping,
+            #game-container.htmx-settling {
+                transition: none;
+            }
+        }
     </style>
 </head>
 <body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
 
-    <button class="dark-mode-toggle" onclick="toggleDarkMode()" id="theme-toggle">
-        <span id="theme-icon">🌙</span>
+    <button class="dark-mode-toggle" onclick="toggleDarkMode()" id="theme-toggle" type="button" aria-pressed="false" aria-label="다크 모드 전환">
+        <span id="theme-icon" aria-hidden="true">🌙</span>
+        <span class="sr-only" id="theme-text">다크 모드 전환</span>
     </button>
 
     <h1>💣 Minesweeper</h1>
 
     <div class="game-container" id="game-container">
         <!-- 난이도 설정 폼 -->
-        {% include 'minesweeper/partials/difficulty-form.html' %}
+        {% if not board_data %}
+            {% include 'minesweeper/partials/difficulty-form.html' %}
+        {% endif %}
         
-        <!-- 게임 상태 바 -->
-        <div id="status-bar" class="status-bar" style="display:none;">
-            {% if board_data %}
-                <span>
-                    {% if game_over %}💥 게임 오버!
-                    {% elif won %}🎉 승리!
-                    {% else %}🚩 남은 깃발: {{ remaining_flags }}
-                    {% endif %}
-                </span>
-                <a href="{% url 'index' %}" style="text-decoration:none; color:var(--link-color);">새 게임</a>
-            {% endif %}
-        </div>
+        {% if board_data %}
+            <!-- 게임 상태 바 -->
+            {% include 'minesweeper/partials/status-bar.html' %}
 
-        <!-- 게임 보드 -->
-        <div class="board-wrap" id="board-area" style="display:none;">
-            <div class="board" id="game-board" style="grid-template-columns: repeat({{ cols }}, var(--cell-size));">
-                {% include 'minesweeper/partials/board.html' %}
+            <!-- 게임 보드 -->
+            <div class="board-wrap" id="board-area">
+                <div class="board" id="game-board" style="grid-template-columns: repeat({{ cols }}, var(--cell-size));">
+                    {% include 'minesweeper/partials/board.html' %}
+                </div>
             </div>
-        </div>
+        {% endif %}
     </div>
 
     <p style="margin-top: 15px; color: var(--tip-color); font-size: 0.9rem;" id="tip-text">Tip: 오른쪽 클릭으로 🚩를 꽂으세요!</p>
@@ -444,29 +521,87 @@
             });
         });
 
+        function updateThemeToggleState(isDarkMode) {
+            const button = document.getElementById('theme-toggle');
+            const icon = document.getElementById('theme-icon');
+            const text = document.getElementById('theme-text');
+            if (!button || !icon || !text) {
+                return;
+            }
+            button.setAttribute('aria-pressed', String(isDarkMode));
+            icon.textContent = isDarkMode ? '☀️' : '🌙';
+            text.textContent = isDarkMode ? '라이트 모드 전환' : '다크 모드 전환';
+        }
+
+        function checkWinState() {
+            const statusBar = document.getElementById('status-bar');
+            if (!statusBar) {
+                return;
+            }
+            const won = statusBar.dataset.won === 'true';
+            if (won && !window.__minesweeperWinShown) {
+                window.__minesweeperWinShown = true;
+                launchConfetti();
+            }
+            if (!won) {
+                window.__minesweeperWinShown = false;
+            }
+        }
+
+        function launchConfetti() {
+            if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                return;
+            }
+            const container = document.createElement('div');
+            container.className = 'confetti-container';
+            const colors = ['#ff6b6b', '#feca57', '#48dbfb', '#1dd1a1', '#5f27cd'];
+            const total = 40;
+            for (let i = 0; i < total; i++) {
+                const piece = document.createElement('div');
+                piece.className = 'confetti-piece';
+                piece.style.left = `${Math.random() * 100}%`;
+                piece.style.backgroundColor = colors[i % colors.length];
+                piece.style.animationDuration = `${1.2 + Math.random()}s`;
+                piece.style.animationDelay = `${Math.random() * 0.2}s`;
+                piece.style.transform = `translateY(-10vh) rotate(${Math.random() * 360}deg)`;
+                container.appendChild(piece);
+            }
+            document.body.appendChild(container);
+            setTimeout(() => container.remove(), 2000);
+        }
+
         // 다크모드 초기화
         function initDarkMode() {
             const isDarkMode = localStorage.getItem('darkMode') === 'true';
             if (isDarkMode) {
                 document.body.classList.add('dark-mode');
-                document.getElementById('theme-icon').textContent = '☀️';
             }
+            updateThemeToggleState(isDarkMode);
         }
 
         // 다크모드 토글
         function toggleDarkMode() {
             const body = document.body;
-            const icon = document.getElementById('theme-icon');
             
             body.classList.toggle('dark-mode');
             const isDarkMode = body.classList.contains('dark-mode');
             
             localStorage.setItem('darkMode', isDarkMode);
-            icon.textContent = isDarkMode ? '☀️' : '🌙';
+            updateThemeToggleState(isDarkMode);
+        }
+
+        if (window.htmx) {
+            htmx.on('htmx:afterSwap', function() {
+                checkWinState();
+            });
+            htmx.on('htmx:oobAfterSwap', function() {
+                checkWinState();
+            });
         }
 
         // 페이지 로드 시 다크모드 설정 적용
         initDarkMode();
+        checkWinState();
     </script>
 
 </body>

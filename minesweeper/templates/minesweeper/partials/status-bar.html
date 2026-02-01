@@ -1,9 +1,28 @@
-<div class="status-bar" id="status-bar">
+<div class="status-bar" id="status-bar" role="status" aria-live="polite" data-won="{{ won|yesno:'true,false' }}" data-game-over="{{ game_over|yesno:'true,false' }}" {% if not board_data %}hidden{% endif %}>
     <span>
         {% if game_over %}💥 게임 오버!
         {% elif won %}🎉 승리!
         {% else %}🚩 남은 깃발: {{ remaining_flags }}
         {% endif %}
     </span>
-    <a href="{% url 'index' %}" style="text-decoration:none; color:var(--link-color);">새 게임</a>
+    <span class="status-actions">
+        {% if difficulty == 'custom' %}
+            <a href="{% url 'new_game_custom' rows cols mines %}"
+               hx-get="{% url 'new_game_custom' rows cols mines %}"
+               hx-target="#game-container"
+               hx-swap="innerHTML transition:true"
+               style="text-decoration:none; color:var(--link-color);">
+                새 게임
+            </a>
+        {% else %}
+            <a href="{% url 'new_game_difficulty' difficulty %}"
+               hx-get="{% url 'new_game_difficulty' difficulty %}"
+               hx-target="#game-container"
+               hx-swap="innerHTML transition:true"
+               style="text-decoration:none; color:var(--link-color);">
+                새 게임
+            </a>
+        {% endif %}
+        <a href="{% url 'reset' %}" style="text-decoration:none; color:var(--link-color);">홈</a>
+    </span>
 </div>
