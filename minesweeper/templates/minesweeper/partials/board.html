@@ -91,6 +91,10 @@
             } else {
                 span.textContent = `🚩 남은 깃발: ${state.remaining_flags}`;
             }
+            // 승리 상태 확인 및 꽃가루 애니메이션 트리거
+            if (typeof checkWinState === 'function') {
+                checkWinState();
+            }
         }
     }
 
