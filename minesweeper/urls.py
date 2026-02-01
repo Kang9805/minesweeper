@@ -9,4 +9,5 @@ urlpatterns = [
     path('click/<int:row>/<int:col>/', views.click, name='click'),
     path('flag/<int:row>/<int:col>/', views.flag, name='flag'),
     path('reset/', views.reset, name='reset'),
+    path('api/game-state/', views.game_state, name='game_state'),
 ]

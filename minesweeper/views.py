@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect
 from django.template.loader import render_to_string
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.urls import reverse
 import random
 
@@ -48,6 +48,7 @@ def get_game_context(request):
         'cols': cols,
         'mines': mines,
         'remaining_flags': mines - current_flags,
+        'difficulty': request.session.get('difficulty', 'custom'),
     }
 
 # HTMX 전용 응답 처리 함수
@@ -59,11 +60,10 @@ def render_game_response(request):
     # 게임 보드 렌더링
     board_html = render_to_string('minesweeper/partials/board.html', context)
     
-    # 상태 바를 OOB로 업데이트
+    # 상태 바를 OOB로 업데이트 (outerHTML 교체로 hidden/aria/data 속성까지 갱신)
     status_bar = render_to_string('minesweeper/partials/status-bar.html', context)
-    # inject hx-swap-oob attribute so HTMX updates the existing status-bar in-place
     if '<div' in status_bar:
-        status_bar_oob = status_bar.replace('<div', '<div hx-swap-oob="innerHTML"', 1)
+        status_bar_oob = status_bar.replace('<div', '<div hx-swap-oob="outerHTML"', 1)
     else:
         status_bar_oob = status_bar
 
@@ -136,7 +136,7 @@ def new_game(request, difficulty=None, rows=10, cols=10, mines=10):
 
 def click(request, row, col):
     if request.session.get('game_over', False) or request.session.get('won', False):
-        return render_game_response(request)
+        return HttpResponse(status=204)
 
     board = request.session['board']
     revealed = request.session['revealed']
@@ -145,7 +145,7 @@ def click(request, row, col):
 
     # 깃발이 있는 곳은 클릭 무시
     if revealed[row][col] or flagged[row][col]:
-        return render_game_response(request)
+        return HttpResponse(status=204)
 
     if board[row][col] == -1:
         request.session['game_over'] = True
@@ -162,11 +162,12 @@ def click(request, row, col):
             request.session['won'] = True
 
     request.session['revealed'] = revealed
-    return render_game_response(request)
+    request.session.modified = True
+    return HttpResponse(status=204)
 
 def flag(request, row, col):
     if request.session.get('game_over', False) or request.session.get('won', False):
-        return render_game_response(request)
+        return HttpResponse(status=204)
 
     flagged = request.session['flagged']
     revealed = request.session['revealed']
@@ -202,11 +203,34 @@ def flag(request, row, col):
     if all_mines_flagged and sum(row.count(True) for row in request.session['flagged']) == mines:
         request.session['won'] = True
 
-    return render_game_response(request)
+    request.session.modified = True
+    return HttpResponse(status=204)
 
 def reset(request):
+    rows = request.session.get('rows', 10)
+    cols = request.session.get('cols', 10)
+    mines = request.session.get('mines', 10)
+    difficulty = request.session.get('difficulty', 'custom')
+
     request.session.flush()
+    request.session['rows'] = rows
+    request.session['cols'] = cols
+    request.session['mines'] = mines
+    request.session['difficulty'] = difficulty
     return redirect('index')
+
+def game_state(request):
+    """게임 상태를 JSON으로 반환 (204 응답 후 상태 폴링용)"""
+    context = get_game_context(request)
+    if not context:
+        return JsonResponse({'error': 'no_game'}, status=400)
+    
+    return JsonResponse({
+        'board_data': context['board_data'],
+        'game_over': context['game_over'],
+        'won': context['won'],
+        'remaining_flags': context['remaining_flags'],
+    })
 
 # 재귀적으로 빈 칸을 열어주는 로직 (함수명 중복 방지를 위해 _logic 추가)
 def reveal_logic(board, revealed, flagged, row, col, rows, cols):
