@@ -97,7 +97,13 @@ def new_game(request, difficulty=None, rows=10, cols=10, mines=10):
         rows = int(request.POST.get('rows', 10))
         cols = int(request.POST.get('cols', 10))
         mines = int(request.POST.get('mines', 10))
-        mines = min(mines, rows * cols - 1)
+        max_mines = rows * cols - 1
+        if mines > max_mines:
+            return HttpResponse(
+                f'폭탄 수는 최대 {max_mines}개까지 설정할 수 있습니다.',
+                status=400
+            )
+        mines = min(mines, max_mines)
 
     # 지뢰판 생성 로직
     board = [[0 for _ in range(cols)] for _ in range(rows)]
