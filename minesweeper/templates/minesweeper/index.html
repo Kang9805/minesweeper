@@ -17,7 +17,7 @@
             --cell-border: #b1b7c0;
             --revealed-bg: #e2e1dd;
             --mine-bg: #b00020;
-            --link-color: #8b5e34;
+            --link-color: #d28b3f;
             --primary-color: #7f1d1d;
             --primary-dark: #5f0f12;
             --text-color: #1b1f24;
@@ -147,6 +147,10 @@
             border: 1px solid var(--glass-border);
             backdrop-filter: blur(10px);
             position: relative;
+        }
+
+        body.dark-mode .game-container {
+            border-width: 2px;
         }
 
         .game-container::before {
