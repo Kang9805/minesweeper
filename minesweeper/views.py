@@ -192,12 +192,12 @@ def flag(request, row, col):
     rows = request.session.get('rows')
     cols = request.session.get('cols')
     board = request.session.get('board')
-    # 1) 공개된 칸 수로 승리 판정
+    # 공개된 칸 수로 승리 판정
     revealed_count = sum(r.count(True) for r in request.session['revealed'])
     if revealed_count == (rows * cols) - mines:
         request.session['won'] = True
 
-    # 2) 모든 지뢰가 깃발로 표시되었는지 확인
+    # 모든 지뢰가 깃발로 표시되었는지 확인
     all_mines_flagged = True
     for r in range(rows):
         for c in range(cols):
