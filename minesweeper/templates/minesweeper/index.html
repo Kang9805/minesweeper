@@ -68,6 +68,14 @@
         body {
             font-family: "Rubik", -apple-system, sans-serif;
             background-color: var(--bg-color);
+            background-image: 
+                repeating-linear-gradient(
+                    45deg,
+                    rgba(0, 0, 0, 0.06),
+                    rgba(0, 0, 0, 0.06) 10px,
+                    transparent 10px,
+                    transparent 20px
+                );
             color: var(--text-color);
             display: flex;
             flex-direction: column;
@@ -86,12 +94,31 @@
             content: "";
             position: fixed;
             inset: 0;
-            background:
-                linear-gradient(120deg, rgba(40, 40, 40, 0.08), transparent 45%),
-                radial-gradient(circle at 10% 10%, rgba(0, 0, 0, 0.06), transparent 55%),
-                repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.035) 0 2px, transparent 2px 7px);
+            /* Danger stripe pattern */
+            background: 
+                repeating-linear-gradient(
+                    45deg,
+                    rgba(0, 0, 0, 0.03),
+                    rgba(0, 0, 0, 0.03) 10px,
+                    transparent 10px,
+                    transparent 20px
+                ),
+                radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.8) 0%, rgba(215, 213, 207, 1) 100%);
             z-index: -2;
             pointer-events: none;
+        }
+
+        html.dark-mode::before {
+            /* Dark tactical hazard pattern */
+            background: 
+                repeating-linear-gradient(
+                    45deg,
+                    rgba(255, 193, 7, 0.05),
+                    rgba(255, 193, 7, 0.05) 10px,
+                    transparent 10px,
+                    transparent 20px
+                ),
+                radial-gradient(circle at 50% 50%, #1a1e23 0%, #05070a 100%);
         }
 
         html::after {
@@ -104,24 +131,19 @@
             pointer-events: none;
         }
 
-        html.dark-mode::before {
-            background:
-                linear-gradient(120deg, rgba(160, 160, 160, 0.12), transparent 45%),
-                radial-gradient(circle at 10% 10%, rgba(255, 255, 255, 0.08), transparent 55%),
-                repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.03) 0 2px, transparent 2px 6px);
-        }
-
         html.dark-mode::after {
-            background:
-                radial-gradient(circle at top, rgba(154, 34, 38, 0.38), transparent 58%),
-                radial-gradient(circle at 80% 20%, rgba(252, 163, 17, 0.18), transparent 55%);
+            background: none;
         }
 
-        @media (max-width: 768px) {
-            body {
-                padding: 12px;
-                justify-content: flex-start;
-            }
+        body.dark-mode {
+            background-image:
+                repeating-linear-gradient(
+                    45deg,
+                    rgba(255, 193, 7, 0.08),
+                    rgba(255, 193, 7, 0.08) 10px,
+                    transparent 10px,
+                    transparent 20px
+                );
         }
 
         h1 {
