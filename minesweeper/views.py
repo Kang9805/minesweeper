@@ -26,12 +26,6 @@ def get_game_context(request):
     start_time = request.session.get('start_time')
     end_time = request.session.get('end_time')
 
-    if start_time is None:
-        start_time = time.time()
-        request.session['start_time'] = start_time
-        request.session['end_time'] = None
-        request.session.modified = True
-
     if end_time is not None and end_time < start_time:
         end_time = None
         request.session['end_time'] = None
@@ -152,7 +146,7 @@ def new_game(request, difficulty=None, rows=10, cols=10, mines=10):
     request.session['cols'] = cols
     request.session['mines'] = mines
     request.session['difficulty'] = difficulty or 'custom'
-    request.session['start_time'] = time.time()
+    request.session['start_time'] = None
     request.session['end_time'] = None
     
     # HTMX 요청이면 전체 in-game 컨테이너를 반환하여 화면 전환합니다
@@ -167,6 +161,10 @@ def new_game(request, difficulty=None, rows=10, cols=10, mines=10):
 def click(request, row, col):
     if request.session.get('game_over', False) or request.session.get('won', False):
         return HttpResponse(status=204)
+
+    if request.session.get('start_time') is None:
+        request.session['start_time'] = time.time()
+        request.session['end_time'] = None
 
     board = request.session['board']
     revealed = request.session['revealed']
@@ -201,6 +199,10 @@ def click(request, row, col):
 def flag(request, row, col):
     if request.session.get('game_over', False) or request.session.get('won', False):
         return HttpResponse(status=204)
+
+    if request.session.get('start_time') is None:
+        request.session['start_time'] = time.time()
+        request.session['end_time'] = None
 
     flagged = request.session['flagged']
     revealed = request.session['revealed']
