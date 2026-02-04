@@ -408,6 +408,16 @@
             align-items: center;
         }
 
+        .status-timer {
+            display: inline-flex;
+            gap: 6px;
+            align-items: center;
+            font-family: "JetBrains Mono", "Rubik", sans-serif;
+            font-weight: 700;
+            color: #fef9c3;
+            letter-spacing: 0.04em;
+        }
+
         @media (max-width: 480px) {
             .status-bar {
                 font-size: 0.95rem;
@@ -699,6 +709,69 @@
             }
         }
 
+        let timerIntervalId = null;
+
+        function formatElapsed(seconds) {
+            const safeSeconds = Math.max(0, seconds || 0);
+            const mins = Math.floor(safeSeconds / 60);
+            const secs = safeSeconds % 60;
+            return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+        }
+
+        function readTimerData() {
+            const statusBar = document.getElementById('status-bar');
+            if (!statusBar) {
+                return null;
+            }
+            const startTs = parseFloat(statusBar.dataset.startTs || '');
+            const endTs = parseFloat(statusBar.dataset.endTs || '');
+            return {
+                statusBar,
+                startTs: Number.isFinite(startTs) ? startTs : null,
+                endTs: Number.isFinite(endTs) ? endTs : null,
+            };
+        }
+
+        function updateTimerDisplay() {
+            const data = readTimerData();
+            if (!data) {
+                return;
+            }
+            const { statusBar, startTs, endTs } = data;
+            const timerValue = statusBar.querySelector('#timer-value');
+            if (!timerValue || !startTs) {
+                return;
+            }
+            const nowTs = Date.now() / 1000;
+            const elapsed = Math.floor((endTs || nowTs) - startTs);
+            timerValue.textContent = formatElapsed(elapsed);
+        }
+
+        function initTimer() {
+            if (timerIntervalId) {
+                clearInterval(timerIntervalId);
+                timerIntervalId = null;
+            }
+            const data = readTimerData();
+            if (!data || !data.startTs) {
+                return;
+            }
+            updateTimerDisplay();
+            if (!data.endTs) {
+                timerIntervalId = setInterval(() => {
+                    updateTimerDisplay();
+                    const latest = readTimerData();
+                    if (latest && latest.endTs) {
+                        updateTimerDisplay();
+                        clearInterval(timerIntervalId);
+                        timerIntervalId = null;
+                    }
+                }, 1000);
+            }
+        }
+
+        window.initTimer = initTimer;
+
         function launchConfetti() {
             if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
                 return;
@@ -746,15 +819,18 @@
         if (window.htmx) {
             htmx.on('htmx:afterSwap', function() {
                 checkWinState();
+                initTimer();
             });
             htmx.on('htmx:oobAfterSwap', function() {
                 checkWinState();
+                initTimer();
             });
         }
 
         // 페이지 로드 시 다크모드 설정 적용
         initDarkMode();
         checkWinState();
+        initTimer();
     </script>
 
 </body>

@@ -83,6 +83,12 @@
         if (statusBar) {
             statusBar.dataset.won = state.won.toString();
             statusBar.dataset.gameOver = state.game_over.toString();
+            if (typeof state.start_time !== 'undefined') {
+                statusBar.dataset.startTs = state.start_time || '';
+            }
+            if (typeof state.end_time !== 'undefined') {
+                statusBar.dataset.endTs = state.end_time || '';
+            }
             const span = statusBar.querySelector('span');
             if (state.game_over) {
                 span.textContent = '💥 게임 오버!';
@@ -90,6 +96,9 @@
                 span.textContent = '🎉 승리!';
             } else {
                 span.textContent = `🚩 남은 깃발: ${state.remaining_flags}`;
+            }
+            if (typeof initTimer === 'function') {
+                initTimer();
             }
             // 승리 상태 확인 및 꽃가루 애니메이션 트리거
             if (typeof checkWinState === 'function') {

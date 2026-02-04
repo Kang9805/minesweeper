@@ -1,9 +1,12 @@
-<div class="status-bar" id="status-bar" role="status" aria-live="polite" data-won="{{ won|yesno:'true,false' }}" data-game-over="{{ game_over|yesno:'true,false' }}" {% if not board_data %}hidden{% endif %}>
+<div class="status-bar" id="status-bar" role="status" aria-live="polite" data-won="{{ won|yesno:'true,false' }}" data-game-over="{{ game_over|yesno:'true,false' }}" data-start-ts="{{ start_time|default_if_none:'' }}" data-end-ts="{{ end_time|default_if_none:'' }}" {% if not board_data %}hidden{% endif %}>
     <span>
         {% if game_over %}💥 게임 오버
         {% elif won %}🎉 승리
         {% else %}🚩 남은 깃발: {{ remaining_flags }}
         {% endif %}
+    </span>
+    <span class="status-timer" aria-live="off">
+        ⏱️ <span id="timer-value">00:00</span>
     </span>
     <span class="status-actions">
         {% if difficulty == 'custom' %}

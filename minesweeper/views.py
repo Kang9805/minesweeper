@@ -3,6 +3,7 @@ from django.template.loader import render_to_string
 from django.http import HttpResponse, JsonResponse
 from django.urls import reverse
 import random
+import time
 
 # 난이도별 설정
 DIFFICULTY_SETTINGS = {
@@ -22,6 +23,24 @@ def get_game_context(request):
     revealed = request.session['revealed']
     flagged = request.session['flagged']
     mines = request.session.get('mines', 10)
+    start_time = request.session.get('start_time')
+    end_time = request.session.get('end_time')
+
+    if start_time is None:
+        start_time = time.time()
+        request.session['start_time'] = start_time
+        request.session['end_time'] = None
+        request.session.modified = True
+
+    if end_time is not None and end_time < start_time:
+        end_time = None
+        request.session['end_time'] = None
+        request.session.modified = True
+
+    now_ts = time.time()
+    elapsed_seconds = 0
+    if start_time is not None:
+        elapsed_seconds = int((end_time or now_ts) - start_time)
     
     # 현재 꽂힌 깃발 수 계산
     current_flags = sum(row.count(True) for row in flagged)
@@ -49,6 +68,9 @@ def get_game_context(request):
         'mines': mines,
         'remaining_flags': mines - current_flags,
         'difficulty': request.session.get('difficulty', 'custom'),
+        'start_time': start_time,
+        'end_time': end_time,
+        'elapsed_seconds': elapsed_seconds,
     }
 
 # HTMX 전용 응답 처리 함수
@@ -130,6 +152,8 @@ def new_game(request, difficulty=None, rows=10, cols=10, mines=10):
     request.session['cols'] = cols
     request.session['mines'] = mines
     request.session['difficulty'] = difficulty or 'custom'
+    request.session['start_time'] = time.time()
+    request.session['end_time'] = None
     
     # HTMX 요청이면 전체 in-game 컨테이너를 반환하여 화면 전환합니다
     if request.headers.get('HX-Request'):
@@ -166,6 +190,9 @@ def click(request, row, col):
         revealed_count = sum(row.count(True) for row in revealed)
         if revealed_count == (rows * cols) - request.session['mines']:
             request.session['won'] = True
+
+    if (request.session.get('game_over') or request.session.get('won')) and not request.session.get('end_time'):
+        request.session['end_time'] = time.time()
 
     request.session['revealed'] = revealed
     request.session.modified = True
@@ -209,6 +236,9 @@ def flag(request, row, col):
     if all_mines_flagged and sum(row.count(True) for row in request.session['flagged']) == mines:
         request.session['won'] = True
 
+    if request.session.get('won') and not request.session.get('end_time'):
+        request.session['end_time'] = time.time()
+
     request.session.modified = True
     return HttpResponse(status=204)
 
@@ -236,6 +266,9 @@ def game_state(request):
         'game_over': context['game_over'],
         'won': context['won'],
         'remaining_flags': context['remaining_flags'],
+        'start_time': context['start_time'],
+        'end_time': context['end_time'],
+        'elapsed_seconds': context['elapsed_seconds'],
     })
 
 # 재귀적으로 빈 칸을 열어주는 로직 (함수명 중복 방지를 위해 _logic 추가)
