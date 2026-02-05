@@ -148,6 +148,7 @@ def new_game(request, difficulty=None, rows=10, cols=10, mines=10):
     request.session['difficulty'] = difficulty or 'custom'
     request.session['start_time'] = None
     request.session['end_time'] = None
+    request.session['first_click_done'] = False
     
     # HTMX 요청이면 전체 in-game 컨테이너를 반환하여 화면 전환합니다
     if request.headers.get('HX-Request'):
@@ -170,6 +171,51 @@ def click(request, row, col):
     revealed = request.session['revealed']
     flagged = request.session['flagged']
     rows, cols = request.session['rows'], request.session['cols']
+    
+    # 첫 클릭 안전 보장: 첫 클릭 위치와 주변 3x3 영역에 지뢰가 없도록 재배치
+    if not request.session.get('first_click_done', False):
+        request.session['first_click_done'] = True
+        
+        # 클릭한 위치와 주변 칸 좌표 수집
+        safe_positions = set()
+        for dr in [-1, 0, 1]:
+            for dc in [-1, 0, 1]:
+                nr, nc = row + dr, col + dc
+                if 0 <= nr < rows and 0 <= nc < cols:
+                    safe_positions.add((nr, nc))
+        
+        # 현재 지뢰 위치 수집
+        mine_positions = set()
+        for r in range(rows):
+            for c in range(cols):
+                if board[r][c] == -1:
+                    mine_positions.add((r, c))
+        
+        # 안전 영역에 있는 지뢰를 다른 곳으로 이동
+        mines_to_move = mine_positions & safe_positions
+        if mines_to_move:
+            # 가능한 빈 칸 찾기
+            all_positions = {(r, c) for r in range(rows) for c in range(cols)}
+            available_positions = list(all_positions - mine_positions - safe_positions)
+            
+            for old_pos in mines_to_move:
+                if available_positions:
+                    new_pos = available_positions.pop(0)
+                    mine_positions.remove(old_pos)
+                    mine_positions.add(new_pos)
+            
+            # 보드 재생성
+            board = [[0 for _ in range(cols)] for _ in range(rows)]
+            for r, c in mine_positions:
+                board[r][c] = -1
+                # 주변 숫자 업데이트
+                for dr in [-1, 0, 1]:
+                    for dc in [-1, 0, 1]:
+                        nr, nc = r + dr, c + dc
+                        if 0 <= nr < rows and 0 <= nc < cols and board[nr][nc] != -1:
+                            board[nr][nc] += 1
+            
+            request.session['board'] = board
 
     # 깃발이 있는 곳은 클릭 무시
     if revealed[row][col] or flagged[row][col]:
