@@ -596,6 +596,157 @@
                 transition: none;
             }
         }
+
+        /* 메인 레이아웃 */
+        .main-layout {
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        /* 기록 패널 */
+        .records-panel {
+            background: var(--container-bg);
+            padding: 20px;
+            border-radius: 14px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(10px);
+            min-width: 280px;
+            max-width: 320px;
+        }
+
+        body.dark-mode .records-panel {
+            border-width: 2px;
+        }
+
+        .records-panel h2 {
+            margin: 0 0 16px 0;
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--text-color);
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+
+        .records-section {
+            margin-bottom: 20px;
+        }
+
+        .records-section:last-child {
+            margin-bottom: 0;
+        }
+
+        .records-section h3 {
+            margin: 0 0 10px 0;
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--tip-color);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .record-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 12px;
+            margin-bottom: 8px;
+            background: rgba(0, 0, 0, 0.15);
+            border-radius: 8px;
+            font-family: "JetBrains Mono", "Rubik", sans-serif;
+            transition: background 0.2s;
+        }
+
+        .record-item:hover {
+            background: rgba(0, 0, 0, 0.25);
+        }
+
+        .record-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .record-label {
+            font-weight: 600;
+            color: var(--text-color);
+        }
+
+        .record-value {
+            font-weight: 700;
+            color: #fbbf24;
+            font-size: 1.05rem;
+        }
+
+        .record-value.no-record {
+            color: var(--tip-color);
+            font-weight: 400;
+            font-style: italic;
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            margin-bottom: 6px;
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 6px;
+        }
+
+        .stat-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .stat-label {
+            font-weight: 500;
+            color: var(--text-color);
+            font-size: 0.95rem;
+        }
+
+        .stat-value {
+            font-weight: 700;
+            color: var(--accent);
+            font-size: 1rem;
+        }
+
+        .new-record-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #fbbf24, #f59e0b);
+            color: #111827;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            margin-left: 6px;
+            animation: recordPulse 0.6s ease-in-out 3;
+        }
+
+        @media (max-width: 1024px) {
+            .main-layout {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .records-panel {
+                width: 100%;
+                max-width: 600px;
+                order: 2;
+            }
+
+            .game-container {
+                order: 1;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .records-panel {
+                padding: 16px;
+                min-width: auto;
+            }
+        }
     </style>
 </head>
 <body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
@@ -607,7 +758,8 @@
 
     <h1>💣 Minesweeper</h1>
 
-    <div class="game-container" id="game-container">
+    <div class="main-layout">
+        <div class="game-container" id="game-container">
         <!-- 난이도 설정 폼 -->
         {% if not board_data %}
             {% include 'minesweeper/partials/difficulty-form.html' %}
@@ -625,6 +777,60 @@
             </div>
         {% endif %}
     </div>
+
+    <!-- 기록 패널 (난이도 선택 화면에서만 표시) -->
+    <aside class="records-panel" id="records-panel" {% if board_data %}style="display: none;"{% endif %}>
+        <h2>🏆 기록</h2>
+        
+        <div class="records-section">
+            <h3>베스트 타임</h3>
+            <div class="record-item">
+                <span class="record-label">🟢 Easy</span>
+                <span class="record-value" id="best-easy">--:--</span>
+            </div>
+            <div class="record-item">
+                <span class="record-label">🟡 Medium</span>
+                <span class="record-value" id="best-medium">--:--</span>
+            </div>
+            <div class="record-item">
+                <span class="record-label">🔴 Hard</span>
+                <span class="record-value" id="best-hard">--:--</span>
+            </div>
+        </div>
+
+        <div class="records-section">
+            <h3>📊 통계</h3>
+            <div class="stat-item">
+                <span class="stat-label">총 플레이</span>
+                <span class="stat-value" id="stat-total">0</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">승리</span>
+                <span class="stat-value" id="stat-wins">0</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">승률</span>
+                <span class="stat-value" id="stat-winrate">0%</span>
+            </div>
+        </div>
+
+        <button onclick="clearAllRecords()" style="
+            width: 100%;
+            padding: 10px;
+            margin-top: 15px;
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.9rem;
+        " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(239,68,68,0.4)'" onmouseout="this.style.transform=''; this.style.boxShadow=''">
+            🗑️ 기록 초기화
+        </button>
+    </aside>
+</div>
 
     <p style="margin-top: 15px; color: var(--tip-color); font-size: 0.9rem;" id="tip-text">Tip: 오른쪽 클릭으로 🚩를 꽂으세요!</p>
 
@@ -702,11 +908,125 @@
             const won = statusBar.dataset.won === 'true';
             if (won && !window.__minesweeperWinShown) {
                 window.__minesweeperWinShown = true;
+                checkAndSaveBestTime();
                 launchConfetti();
             }
             if (!won) {
                 window.__minesweeperWinShown = false;
             }
+        }
+
+        function getBestTime(difficulty) {
+            const key = `minesweeper_best_${difficulty}`;
+            const saved = localStorage.getItem(key);
+            return saved ? parseInt(saved, 10) : null;
+        }
+
+        function setBestTime(difficulty, seconds) {
+            const key = `minesweeper_best_${difficulty}`;
+            localStorage.setItem(key, String(seconds));
+        }
+
+        function getStats() {
+            const total = parseInt(localStorage.getItem('minesweeper_total_games') || '0', 10);
+            const wins = parseInt(localStorage.getItem('minesweeper_total_wins') || '0', 10);
+            return { total, wins };
+        }
+
+        function incrementStat(key) {
+            const current = parseInt(localStorage.getItem(key) || '0', 10);
+            localStorage.setItem(key, String(current + 1));
+        }
+
+        function updateRecordsPanel() {
+            // 베스트 타임 업데이트
+            const difficulties = ['easy', 'medium', 'hard'];
+            difficulties.forEach(diff => {
+                const bestSeconds = getBestTime(diff);
+                const elem = document.getElementById(`best-${diff}`);
+                if (elem) {
+                    if (bestSeconds !== null) {
+                        elem.textContent = formatElapsed(bestSeconds);
+                        elem.classList.remove('no-record');
+                    } else {
+                        elem.textContent = '--:--';
+                        elem.classList.add('no-record');
+                    }
+                }
+            });
+
+            // 통계 업데이트
+            const stats = getStats();
+            const totalElem = document.getElementById('stat-total');
+            const winsElem = document.getElementById('stat-wins');
+            const winrateElem = document.getElementById('stat-winrate');
+
+            if (totalElem) totalElem.textContent = stats.total;
+            if (winsElem) winsElem.textContent = stats.wins;
+            if (winrateElem) {
+                const winrate = stats.total > 0 ? Math.round((stats.wins / stats.total) * 100) : 0;
+                winrateElem.textContent = `${winrate}%`;
+            }
+        }
+
+        function checkAndSaveBestTime() {
+            const statusBar = document.getElementById('status-bar');
+            if (!statusBar) {
+                return;
+            }
+            
+            const difficulty = statusBar.dataset.difficulty;
+            const won = statusBar.dataset.won === 'true';
+            
+            // 통계 업데이트
+            incrementStat('minesweeper_total_games');
+            if (won) {
+                incrementStat('minesweeper_total_wins');
+            }
+            
+            // 커스텀 난이도는 베스트 타임 제외
+            if (difficulty === 'custom' || !won) {
+                updateRecordsPanel();
+                return;
+            }
+            
+            const data = readTimerData();
+            if (!data || !data.startTs || !data.endTs) {
+                updateRecordsPanel();
+                return;
+            }
+            
+            const currentSeconds = Math.floor(data.endTs - data.startTs);
+            const bestSeconds = getBestTime(difficulty);
+            
+            if (bestSeconds === null || currentSeconds < bestSeconds) {
+                setBestTime(difficulty, currentSeconds);
+                
+                // 신기록 뱃지 표시
+                const bestElem = document.getElementById(`best-${difficulty}`);
+                if (bestElem && !bestElem.querySelector('.new-record-badge')) {
+                    const badge = document.createElement('span');
+                    badge.className = 'new-record-badge';
+                    badge.textContent = 'NEW!';
+                    bestElem.parentElement.appendChild(badge);
+                    
+                    setTimeout(() => {
+                        badge.remove();
+                    }, 5000);
+                }
+                
+                // 신기록 메시지
+                const statusText = statusBar.querySelector('span:first-child');
+                if (statusText) {
+                    const originalText = statusText.textContent;
+                    statusText.textContent = '🎉 신기록!';
+                    setTimeout(() => {
+                        statusText.textContent = originalText;
+                    }, 3000);
+                }
+            }
+            
+            updateRecordsPanel();
         }
 
         let timerIntervalId = null;
@@ -772,6 +1092,44 @@
 
         window.initTimer = initTimer;
 
+        function clearAllRecords() {
+            if (!confirm('모든 기록을 삭제하시겠습니까?\n\n이 작업은 취소할 수 없습니다.')) {
+                return;
+            }
+
+            // 모든 localStorage 데이터 삭제
+            localStorage.removeItem('minesweeper_best_easy');
+            localStorage.removeItem('minesweeper_best_medium');
+            localStorage.removeItem('minesweeper_best_hard');
+            localStorage.removeItem('minesweeper_total_games');
+            localStorage.removeItem('minesweeper_total_wins');
+
+            // UI 업데이트
+            updateRecordsPanel();
+
+            // 피드백
+            alert('모든 기록이 초기화되었습니다.');
+        }
+
+        function toggleRecordsPanel() {
+            const recordsPanel = document.getElementById('records-panel');
+            const gameContainer = document.getElementById('game-container');
+            
+            if (!recordsPanel || !gameContainer) {
+                return;
+            }
+
+            // 게임 컨테이너에 board-data가 있으면 게임 중 (기록 패널 숨기기)
+            // 게임 컨테이너가 비어있으면 난이도 선택 화면 (기록 패널 보이기)
+            const hasGameContent = gameContainer.querySelector('#game-board, #status-bar');
+            
+            if (hasGameContent) {
+                recordsPanel.style.display = 'none';
+            } else {
+                recordsPanel.style.display = 'block';
+            }
+        }
+
         function launchConfetti() {
             if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
                 return;
@@ -820,10 +1178,14 @@
             htmx.on('htmx:afterSwap', function() {
                 checkWinState();
                 initTimer();
+                updateRecordsPanel();
+                toggleRecordsPanel();
             });
             htmx.on('htmx:oobAfterSwap', function() {
                 checkWinState();
                 initTimer();
+                updateRecordsPanel();
+                toggleRecordsPanel();
             });
         }
 
@@ -831,6 +1193,8 @@
         initDarkMode();
         checkWinState();
         initTimer();
+        updateRecordsPanel();
+        toggleRecordsPanel();
     </script>
 
 </body>

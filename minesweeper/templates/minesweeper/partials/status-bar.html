@@ -1,4 +1,4 @@
-<div class="status-bar" id="status-bar" role="status" aria-live="polite" data-won="{{ won|yesno:'true,false' }}" data-game-over="{{ game_over|yesno:'true,false' }}" data-start-ts="{{ start_time|default_if_none:'' }}" data-end-ts="{{ end_time|default_if_none:'' }}" {% if not board_data %}hidden{% endif %}>
+<div class="status-bar" id="status-bar" role="status" aria-live="polite" data-won="{{ won|yesno:'true,false' }}" data-game-over="{{ game_over|yesno:'true,false' }}" data-start-ts="{{ start_time|default_if_none:'' }}" data-end-ts="{{ end_time|default_if_none:'' }}" data-difficulty="{{ difficulty }}" {% if not board_data %}hidden{% endif %}>
     <span>
         {% if game_over %}💥 게임 오버
         {% elif won %}🎉 승리
