@@ -31,13 +31,13 @@
 
         @media (max-width: 768px) {
             :root {
-                --cell-size: clamp(24px, 8vw, 36px);
+                --cell-size: clamp(20px, 5.5vw, 32px);
             }
         }
 
         @media (max-width: 480px) {
             :root {
-                --cell-size: clamp(18px, 7.5vw, 28px);
+                --cell-size: clamp(16px, 5vw, 24px);
             }
         }
 
@@ -608,18 +608,66 @@
 
         /* 기록 패널 */
         .records-panel {
+            position: fixed;
+            right: -350px;
+            top: 0;
+            height: 100vh;
+            width: 320px;
             background: var(--container-bg);
             padding: 20px;
-            border-radius: 14px;
+            padding-bottom: 40px;
             box-shadow: var(--shadow);
-            border: 1px solid var(--glass-border);
+            border-left: 1px solid var(--glass-border);
             backdrop-filter: blur(10px);
-            min-width: 280px;
-            max-width: 320px;
+            z-index: 2000;
+            transition: right 0.3s ease;
+            overflow-y: auto;
+            box-sizing: border-box;
+        }
+
+        .records-panel.is-open {
+            right: 0;
         }
 
         body.dark-mode .records-panel {
             border-width: 2px;
+        }
+
+        .records-toggle {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            background: var(--container-bg);
+            border: 1px solid var(--glass-border);
+            color: var(--text-color);
+            padding: 10px 16px;
+            border-radius: 999px;
+            cursor: pointer;
+            font-weight: 600;
+            box-shadow: var(--shadow);
+            transition: all 0.2s;
+            z-index: 1500;
+            backdrop-filter: blur(10px);
+        }
+
+        .records-toggle:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+        }
+
+        .records-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            z-index: 1900;
+        }
+
+        .records-overlay.is-visible {
+            opacity: 1;
+            pointer-events: auto;
         }
 
         .records-panel h2 {
@@ -827,12 +875,6 @@
                 align-items: center;
             }
 
-            .records-panel {
-                width: 100%;
-                max-width: 600px;
-                order: 2;
-            }
-
             .game-container {
                 order: 1;
             }
@@ -840,8 +882,33 @@
 
         @media (max-width: 768px) {
             .records-panel {
-                padding: 16px;
-                min-width: auto;
+                right: auto;
+                left: 0;
+                top: auto;
+                bottom: -100%;
+                width: 100%;
+                height: auto;
+                max-height: 80vh;
+                border-left: none;
+                border-top: 1px solid var(--glass-border);
+                border-radius: 20px 20px 0 0;
+                transition: bottom 0.3s ease;
+                padding: 20px 20px 40px 20px;
+            }
+
+            .records-panel.is-open {
+                right: auto;
+                bottom: 0;
+            }
+
+            .records-toggle {
+                top: auto;
+                bottom: 20px;
+                right: 20px;
+            }
+
+            .records-panel h2 {
+                margin-top: 0;
             }
         }
     </style>
@@ -875,8 +942,16 @@
         {% endif %}
     </div>
 
-    <!-- 기록 패널 (난이도 선택 화면에서만 표시) -->
-    <aside class="records-panel" id="records-panel" {% if board_data %}style="display: none;"{% endif %}>
+    <!-- 기록 토글 버튼 -->
+    <button class="records-toggle" id="records-toggle" onclick="toggleRecordsPanel()" type="button">
+        📊 기록
+    </button>
+
+    <!-- 오버레이 -->
+    <div class="records-overlay" id="records-overlay" onclick="toggleRecordsPanel()"></div>
+
+    <!-- 기록 패널 -->
+    <aside class="records-panel" id="records-panel">
         <h2>🏆 기록</h2>
         
         <div class="records-section">
@@ -1301,20 +1376,25 @@
 
         function toggleRecordsPanel() {
             const recordsPanel = document.getElementById('records-panel');
-            const gameContainer = document.getElementById('game-container');
+            const overlay = document.getElementById('records-overlay');
             
-            if (!recordsPanel || !gameContainer) {
+            if (!recordsPanel) {
                 return;
             }
 
-            // 게임 컨테이너에 board-data가 있으면 게임 중 (기록 패널 숨기기)
-            // 게임 컨테이너가 비어있으면 난이도 선택 화면 (기록 패널 보이기)
-            const hasGameContent = gameContainer.querySelector('#game-board, #status-bar');
+            const isOpen = recordsPanel.classList.contains('is-open');
             
-            if (hasGameContent) {
-                recordsPanel.style.display = 'none';
+            if (isOpen) {
+                recordsPanel.classList.remove('is-open');
+                if (overlay) {
+                    overlay.classList.remove('is-visible');
+                }
             } else {
-                recordsPanel.style.display = 'block';
+                recordsPanel.classList.add('is-open');
+                if (overlay) {
+                    overlay.classList.add('is-visible');
+                }
+                updateRecordsPanel();
             }
         }
 
@@ -1367,13 +1447,11 @@
                 checkWinState();
                 initTimer();
                 updateRecordsPanel();
-                toggleRecordsPanel();
             });
             htmx.on('htmx:oobAfterSwap', function() {
                 checkWinState();
                 initTimer();
                 updateRecordsPanel();
-                toggleRecordsPanel();
             });
         }
 
@@ -1382,7 +1460,6 @@
         checkWinState();
         initTimer();
         updateRecordsPanel();
-        toggleRecordsPanel();
     </script>
 
 </body>
