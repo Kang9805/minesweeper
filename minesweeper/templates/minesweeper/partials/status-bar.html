@@ -2,11 +2,15 @@
     <span>
         {% if game_over %}💥 게임 오버
         {% elif won %}🎉 승리
-        {% else %}🚩 남은 깃발: {{ remaining_flags }}
+        {% else %}🚩 x {{ remaining_flags }}
         {% endif %}
     </span>
     <span class="status-timer" aria-live="off">
-        ⏱️ <span id="timer-value">00:00</span>
+        <span id="timer-value">00:00</span>
+        <button id="pause-btn" class="pause-btn" title="일시 정지" aria-label="게임 일시 정지">
+            <span class="pause-icon">⏸</span>
+            <span class="play-icon" style="display: none;">▶</span>
+        </button>
     </span>
     <span class="status-actions">
         {% if difficulty == 'custom' %}

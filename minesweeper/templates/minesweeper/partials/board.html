@@ -95,7 +95,7 @@
             } else if (state.won) {
                 span.textContent = '🎉 승리';
             } else {
-                span.textContent = `🚩 남은 깃발: ${state.remaining_flags}`;
+                span.textContent = `🚩 x ${state.remaining_flags}`;
             }
             if (typeof initTimer === 'function') {
                 initTimer();
