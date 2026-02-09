@@ -108,6 +108,9 @@
     }
 
     function flagCell(cell) {
+        if (window.__pauseState?.isPaused && typeof window.togglePause === 'function') {
+            window.togglePause();
+        }
         const row = cell.dataset.row;
         const col = cell.dataset.col;
         if (!row || !col) {
@@ -144,6 +147,9 @@
     }
 
     function clickCell(cell) {
+        if (window.__pauseState?.isPaused && typeof window.togglePause === 'function') {
+            window.togglePause();
+        }
         const row = cell.dataset.row;
         const col = cell.dataset.col;
         if (!row || !col) {

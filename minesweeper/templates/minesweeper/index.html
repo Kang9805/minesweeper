@@ -1271,7 +1271,12 @@
 
             const data = readTimerData();
             if (data && data.startTs) {
-                const elapsed = Math.floor((data.endTs || (Date.now() / 1000)) - data.startTs);
+                const now = Date.now() / 1000;
+                const endTime = data.endTs || now;
+                let elapsed = endTime - data.startTs - pauseAccum;
+                if (isPaused && pauseStartTime) {
+                    elapsed -= Math.max(0, endTime - pauseStartTime);
+                }
                 if (timeValue) {
                     timeValue.textContent = formatElapsed(elapsed);
                 }
@@ -1402,11 +1407,65 @@
 
         let timerIntervalId = null;
         let isPaused = false;
-        let pausedElapsed = 0;
         let pauseStartTime = null;
+        let pauseAccum = 0;
+        let lastStartTs = null;
+
+        function savePauseState() {
+            window.__pauseState = {
+                isPaused,
+                pauseStartTime,
+                pauseAccum,
+                lastStartTs,
+            };
+        }
+
+        function loadPauseState() {
+            if (!window.__pauseState) {
+                return;
+            }
+            isPaused = !!window.__pauseState.isPaused;
+            pauseStartTime = window.__pauseState.pauseStartTime || null;
+            pauseAccum = window.__pauseState.pauseAccum || 0;
+            lastStartTs = window.__pauseState.lastStartTs || lastStartTs;
+        }
+
+        function resetPauseState() {
+            isPaused = false;
+            pauseStartTime = null;
+            pauseAccum = 0;
+            savePauseState();
+        }
+
+        function applyPauseButtonState() {
+            const pauseBtn = document.getElementById('pause-btn');
+            if (!pauseBtn) {
+                return;
+            }
+            const pauseIcon = pauseBtn.querySelector('.pause-icon');
+            const playIcon = pauseBtn.querySelector('.play-icon');
+
+            if (isPaused) {
+                pauseBtn.classList.add('paused');
+                if (pauseIcon) {
+                    pauseIcon.style.display = 'none';
+                }
+                if (playIcon) {
+                    playIcon.style.display = '';
+                }
+            } else {
+                pauseBtn.classList.remove('paused');
+                if (pauseIcon) {
+                    pauseIcon.style.display = '';
+                }
+                if (playIcon) {
+                    playIcon.style.display = 'none';
+                }
+            }
+        }
 
         function formatElapsed(seconds) {
-            const safeSeconds = Math.max(0, seconds || 0);
+            const safeSeconds = Math.max(0, Math.floor(seconds || 0));
             const mins = Math.floor(safeSeconds / 60);
             const secs = safeSeconds % 60;
             return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
@@ -1436,15 +1495,21 @@
             if (!timerValue || !startTs) {
                 return;
             }
-            
-            let elapsed;
-            if (isPaused) {
-                elapsed = pausedElapsed;
-            } else {
-                const nowTs = Date.now() / 1000;
-                elapsed = Math.floor((endTs || nowTs) - startTs);
+
+            const now = Date.now() / 1000;
+            let elapsed = now - startTs - pauseAccum;
+
+            if (isPaused && pauseStartTime) {
+                elapsed -= (now - pauseStartTime);
             }
-            
+
+            if (endTs) {
+                elapsed = endTs - startTs - pauseAccum;
+                if (isPaused && pauseStartTime) {
+                    elapsed -= Math.max(0, endTs - pauseStartTime);
+                }
+            }
+
             timerValue.textContent = formatElapsed(elapsed);
         }
 
@@ -1453,25 +1518,23 @@
                 clearInterval(timerIntervalId);
                 timerIntervalId = null;
             }
-            
-            // 일시 정지 상태 초기화
-            isPaused = false;
-            pausedElapsed = 0;
-            pauseStartTime = null;
-            
-            const pauseBtn = document.getElementById('pause-btn');
-            if (pauseBtn) {
-                pauseBtn.classList.remove('paused');
-                pauseBtn.querySelector('.pause-icon').style.display = '';
-                pauseBtn.querySelector('.play-icon').style.display = 'none';
-            }
-            
+
             const data = readTimerData();
             if (!data || !data.startTs) {
                 return;
             }
+
+            if (lastStartTs !== data.startTs) {
+                lastStartTs = data.startTs;
+                resetPauseState();
+            } else {
+                loadPauseState();
+            }
+
+            applyPauseButtonState();
             updateTimerDisplay();
-            if (!data.endTs) {
+
+            if (!data.endTs && !isPaused) {
                 timerIntervalId = setInterval(() => {
                     updateTimerDisplay();
                     const latest = readTimerData();
@@ -1487,47 +1550,28 @@
         window.initTimer = initTimer;
 
         function togglePause() {
-            const pauseBtn = document.getElementById('pause-btn');
-            const pauseIcon = pauseBtn?.querySelector('.pause-icon');
-            const playIcon = pauseBtn?.querySelector('.play-icon');
-            
             const data = readTimerData();
             if (!data || !data.startTs || data.endTs) {
-                // 타이머가 시작되지 않았거나 게임이 종료된 경우
                 return;
             }
-            
-            isPaused = !isPaused;
-            
-            if (isPaused) {
-                // 일시 정지: 현재 경과 시간 저장
-                const nowTs = Date.now() / 1000;
-                pausedElapsed = Math.floor(nowTs - data.startTs);
-                pauseStartTime = nowTs;
-                
-                // 타이머 인터벌 정지
+
+            const now = Date.now() / 1000;
+
+            if (!isPaused) {
+                isPaused = true;
+                pauseStartTime = now;
+
                 if (timerIntervalId) {
                     clearInterval(timerIntervalId);
                     timerIntervalId = null;
                 }
-                
-                // 버튼 UI 변경
-                if (pauseBtn) {
-                    pauseBtn.classList.add('paused');
-                    if (pauseIcon) pauseIcon.style.display = 'none';
-                    if (playIcon) playIcon.style.display = '';
-                }
             } else {
-                // 재개: start_time을 조정하여 일시 정지 시간 반영
-                const pauseDuration = (Date.now() / 1000) - pauseStartTime;
-                const statusBar = data.statusBar;
-                const newStartTs = data.startTs + pauseDuration;
-                statusBar.dataset.startTs = newStartTs.toString();
-                
-                pausedElapsed = 0;
+                if (pauseStartTime) {
+                    pauseAccum += (now - pauseStartTime);
+                }
                 pauseStartTime = null;
-                
-                // 타이머 인터벌 재시작
+                isPaused = false;
+
                 timerIntervalId = setInterval(() => {
                     updateTimerDisplay();
                     const latest = readTimerData();
@@ -1537,17 +1581,14 @@
                         timerIntervalId = null;
                     }
                 }, 1000);
-                
-                // 버튼 UI 변경
-                if (pauseBtn) {
-                    pauseBtn.classList.remove('paused');
-                    if (pauseIcon) pauseIcon.style.display = '';
-                    if (playIcon) playIcon.style.display = 'none';
-                }
             }
-            
+
+            savePauseState();
+            applyPauseButtonState();
             updateTimerDisplay();
         }
+
+        window.togglePause = togglePause;
 
         function clearAllRecords() {
             if (!confirm('모든 기록을 삭제하시겠습니까?\n\n이 작업은 취소할 수 없습니다.')) {
