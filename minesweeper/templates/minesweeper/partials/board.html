@@ -91,9 +91,9 @@
             }
             const span = statusBar.querySelector('span');
             if (state.game_over) {
-                span.textContent = '💥 게임 오버!';
+                span.textContent = '💥 게임 오버';
             } else if (state.won) {
-                span.textContent = '🎉 승리!';
+                span.textContent = '🎉 승리';
             } else {
                 span.textContent = `🚩 남은 깃발: ${state.remaining_flags}`;
             }
