@@ -741,6 +741,134 @@
             box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
         }
 
+        .help-toggle {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: var(--container-bg);
+            border: 1px solid var(--glass-border);
+            color: var(--text-color);
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 24px;
+            box-shadow: var(--shadow);
+            transition: all 0.2s;
+            z-index: 1500;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(10px);
+        }
+
+        .help-toggle:hover {
+            transform: translateY(-2px) scale(1.05);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+        }
+
+        .help-panel {
+            position: fixed;
+            right: -400px;
+            top: 0;
+            height: 100vh;
+            width: 380px;
+            background: var(--container-bg);
+            padding: 20px;
+            padding-bottom: 40px;
+            box-shadow: var(--shadow);
+            border-left: 1px solid var(--glass-border);
+            backdrop-filter: blur(10px);
+            z-index: 2000;
+            transition: right 0.3s ease;
+            overflow-y: auto;
+            box-sizing: border-box;
+        }
+
+        .help-panel.is-open {
+            right: 0;
+        }
+
+        body.dark-mode .help-panel {
+            border-width: 2px;
+        }
+
+        .help-panel h2 {
+            margin: 0 0 20px 0;
+            font-size: 1.5rem;
+            color: var(--text-color);
+        }
+
+        .help-section {
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .help-section:last-child {
+            border-bottom: none;
+        }
+
+        .help-section h3 {
+            margin: 0 0 10px 0;
+            font-size: 1.1rem;
+            color: var(--text-color);
+            font-weight: 600;
+        }
+
+        .help-section p {
+            margin: 8px 0;
+            line-height: 1.6;
+            color: var(--text-color);
+            opacity: 0.9;
+        }
+
+        .help-section ul {
+            margin: 8px 0;
+            padding-left: 20px;
+        }
+
+        .help-section li {
+            margin: 6px 0;
+            line-height: 1.6;
+            color: var(--text-color);
+            opacity: 0.9;
+        }
+
+        .help-section li strong {
+            color: var(--accent);
+        }
+
+        .number-examples {
+            display: flex;
+            gap: 12px;
+            margin-top: 12px;
+            flex-wrap: wrap;
+        }
+
+        .cell-demo {
+            width: 45px;
+            height: 45px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--cell-bg);
+            font-weight: 800;
+            border-radius: 8px;
+            font-family: "JetBrains Mono", "Rubik", sans-serif;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .help-tip {
+            font-size: 0.9rem;
+            color: var(--tip-color);
+            font-style: italic;
+            padding: 8px 12px;
+            background: rgba(255, 193, 7, 0.1);
+            border-radius: 6px;
+            margin-top: 8px;
+        }
+
         .records-overlay {
             position: fixed;
             inset: 0;
@@ -1015,10 +1143,39 @@
             .records-toggle {
                 top: auto;
                 bottom: 20px;
+                right: 80px;
+            }
+
+            .help-panel {
+                right: auto;
+                left: 0;
+                top: auto;
+                bottom: -100%;
+                width: 100%;
+                height: auto;
+                max-height: 80vh;
+                border-left: none;
+                border-top: 1px solid var(--glass-border);
+                border-radius: 20px 20px 0 0;
+                transition: bottom 0.3s ease;
+                padding: 20px 20px 40px 20px;
+            }
+
+            .help-panel.is-open {
+                right: auto;
+                bottom: 0;
+            }
+
+            .help-toggle {
+                bottom: 20px;
                 right: 20px;
             }
 
             .records-panel h2 {
+                margin-top: 0;
+            }
+
+            .help-panel h2 {
                 margin-top: 0;
             }
         }
@@ -1062,8 +1219,13 @@
         📊 기록
     </button>
 
+    <!-- 룰북 토글 버튼 -->
+    <button class="help-toggle" id="help-toggle" onclick="toggleHelpPanel()" type="button" aria-label="게임 룰">
+        ❓
+    </button>
+
     <!-- 오버레이 -->
-    <div class="records-overlay" id="records-overlay" onclick="toggleRecordsPanel()"></div>
+    <div class="records-overlay" id="records-overlay" onclick="closeAllPanels()"></div>
 
     <!-- 기록 패널 -->
     <aside class="records-panel" id="records-panel">
@@ -1116,6 +1278,66 @@
         " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(239,68,68,0.4)'" onmouseout="this.style.transform=''; this.style.boxShadow=''">
             🗑️ 기록 초기화
         </button>
+    </aside>
+
+    <!-- 룰북 패널 -->
+    <aside class="help-panel" id="help-panel">
+        <h2>💣 게임 룰</h2>
+        
+        <div class="help-section">
+            <h3>🎯 목표</h3>
+            <p>모든 지뢰를 피해 안전한 칸을 모두 열기</p>
+        </div>
+
+        <div class="help-section">
+            <h3>🖱️ 조작법</h3>
+            <ul>
+                <li><strong>좌클릭:</strong> 칸 열기</li>
+                <li><strong>우클릭:</strong> 깃발 설치/해제 (PC)</li>
+                <li><strong>롱프레스:</strong> 깃발 설치/해제 (모바일)</li>
+                <li><strong>⏸ 버튼:</strong> 게임 일시 정지/재개</li>
+            </ul>
+            <p class="help-tip">💡 일시 정지 중 칸을 클릭하면 자동으로 재개됩니다</p>
+        </div>
+
+        <div class="help-section">
+            <h3>🔢 숫자의 의미</h3>
+            <p>열린 칸의 숫자는 <strong>주변 8칸에 있는 지뢰 개수</strong>를 나타냅니다</p>
+            <div class="number-examples">
+                <span class="cell-demo color-1">1</span>
+                <span class="cell-demo color-2">2</span>
+                <span class="cell-demo color-3">3</span>
+                <span class="cell-demo color-4">4</span>
+            </div>
+        </div>
+
+        <div class="help-section">
+            <h3>🚩 깃발 사용</h3>
+            <p>지뢰가 있다고 생각되는 칸에 깃발을 꽂아 표시하세요</p>
+            <p class="help-tip">💡 깃발을 모두 사용하지 않아도 승리할 수 있습니다</p>
+        </div>
+
+        <div class="help-section">
+            <h3>🏆 승리 조건</h3>
+            <p>지뢰가 아닌 모든 칸을 열면 승리!</p>
+            <p>최고 기록을 세우고 📊 기록에서 확인하세요</p>
+        </div>
+
+        <div class="help-section">
+            <h3>💥 패배 조건</h3>
+            <p>지뢰가 있는 칸을 클릭하면 게임 오버</p>
+            <p class="help-tip">💡 첫 클릭은 항상 안전합니다 (3x3 영역)</p>
+        </div>
+
+        <div class="help-section">
+            <h3>🎮 난이도</h3>
+            <ul>
+                <li><strong>🟢 초급:</strong> 9x9, 지뢰 10개</li>
+                <li><strong>🟡 중급:</strong> 16x16, 지뢰 40개</li>
+                <li><strong>🔴 고급:</strong> 16x30, 지뢰 99개</li>
+                <li><strong>⚙️ 커스텀:</strong> 원하는 크기와 지뢰 개수</li>
+            </ul>
+        </div>
     </aside>
 </div>
 
@@ -1637,6 +1859,51 @@
                     overlay.classList.add('is-visible');
                 }
                 updateRecordsPanel();
+            }
+        }
+
+        function toggleHelpPanel() {
+            const helpPanel = document.getElementById('help-panel');
+            const overlay = document.getElementById('records-overlay');
+            
+            if (!helpPanel) {
+                return;
+            }
+
+            const isOpen = helpPanel.classList.contains('is-open');
+            
+            if (isOpen) {
+                helpPanel.classList.remove('is-open');
+                if (overlay) {
+                    overlay.classList.remove('is-visible');
+                }
+            } else {
+                // 기록 패널이 열려있으면 닫기
+                const recordsPanel = document.getElementById('records-panel');
+                if (recordsPanel && recordsPanel.classList.contains('is-open')) {
+                    recordsPanel.classList.remove('is-open');
+                }
+                
+                helpPanel.classList.add('is-open');
+                if (overlay) {
+                    overlay.classList.add('is-visible');
+                }
+            }
+        }
+
+        function closeAllPanels() {
+            const recordsPanel = document.getElementById('records-panel');
+            const helpPanel = document.getElementById('help-panel');
+            const overlay = document.getElementById('records-overlay');
+            
+            if (recordsPanel) {
+                recordsPanel.classList.remove('is-open');
+            }
+            if (helpPanel) {
+                helpPanel.classList.remove('is-open');
+            }
+            if (overlay) {
+                overlay.classList.remove('is-visible');
             }
         }
 
