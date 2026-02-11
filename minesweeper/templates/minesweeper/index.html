@@ -1140,12 +1140,6 @@
                 bottom: 0;
             }
 
-            .records-toggle {
-                top: auto;
-                bottom: 20px;
-                right: 80px;
-            }
-
             .help-panel {
                 right: auto;
                 left: 0;
@@ -1215,8 +1209,8 @@
     </div>
 
     <!-- 기록 토글 버튼 -->
-    <button class="records-toggle" id="records-toggle" onclick="toggleRecordsPanel()" type="button">
-        📊 기록
+    <button class="help-toggle records-toggle" id="records-toggle" onclick="toggleRecordsPanel()" type="button" aria-label="기록">
+        📊
     </button>
 
     <!-- 룰북 토글 버튼 -->
