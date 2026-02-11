@@ -1,33 +1,33 @@
 <div class="quick-start-section">
-    <h2>🚀 퀵 스타트</h2>
+    <h2>🚀 Quick Start</h2>
     <div class="difficulty-buttons">
         <button type="button" 
                 class="difficulty-btn"
                 hx-get="{% url 'new_game_difficulty' 'easy' %}"
                 hx-target="#game-container"
                 hx-swap="innerHTML transition:true">
-            초급<br><small>8×8</small>
+            🟢 Easy<br><small>8×8</small>
         </button>
         <button type="button" 
                 class="difficulty-btn"
                 hx-get="{% url 'new_game_difficulty' 'medium' %}"
                 hx-target="#game-container"
                 hx-swap="innerHTML transition:true">
-            중급<br><small>12×12</small>
+            🟡 Medium<br><small>12×12</small>
         </button>
         <button type="button" 
                 class="difficulty-btn"
                 hx-get="{% url 'new_game_difficulty' 'hard' %}"
                 hx-target="#game-container"
                 hx-swap="innerHTML transition:true">
-            고급<br><small>16×16</small>
+            🔴 Hard<br><small>16×16</small>
         </button>
     </div>
 </div>
 
 <form class="difficulty-form" hx-post="{% url 'new_game' %}" hx-target="#game-container" hx-swap="innerHTML transition:true">
     {% csrf_token %}
-    <h2>🎯 커스텀 설정</h2>
+    <h2>⚙️ Custom</h2>
     <div class="form-row">
         <div class="form-group">
             <label for="rows">가로 (rows)</label>
@@ -38,12 +38,12 @@
             <input type="number" id="cols" name="cols" min="5" max="30" value="{{ cols }}" required oninput="validateCustomDifficulty()">
         </div>
         <div class="form-group">
-            <label for="mines">지뢰 개수</label>
+            <label for="mines">지뢰 개수 (mines)</label>
             <input type="number" id="mines" name="mines" min="1" max="900" value="{{ mines }}" required oninput="validateCustomDifficulty()">
         </div>
     </div>
     <div class="form-row-button">
-        <button type="submit" class="btn-start" id="start-btn">🚀 게임 시작</button>
+        <button type="submit" class="btn-start" id="start-btn">게임 시작</button>
     </div>
 </form>
 
