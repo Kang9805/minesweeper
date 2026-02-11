@@ -869,6 +869,46 @@
             margin-top: 8px;
         }
 
+        .recent-games {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .recent-game-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 10px;
+            margin-bottom: 6px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 6px;
+            font-size: 0.85rem;
+        }
+
+        .recent-game-item.win {
+            border-left: 3px solid #10b981;
+        }
+
+        .recent-game-item.loss {
+            border-left: 3px solid #ef4444;
+        }
+
+        .recent-game-info {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .recent-game-difficulty {
+            font-weight: 600;
+            min-width: 50px;
+        }
+
+        .recent-game-time {
+            color: var(--tip-color);
+            font-family: "JetBrains Mono", monospace;
+        }
+
         .records-overlay {
             position: fixed;
             inset: 0;
@@ -1255,6 +1295,21 @@
                 <span class="stat-label">승률</span>
                 <span class="stat-value" id="stat-winrate">0%</span>
             </div>
+            <div class="stat-item">
+                <span class="stat-label">현재 연승</span>
+                <span class="stat-value" id="stat-streak">0</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">최고 연승</span>
+                <span class="stat-value" id="stat-best-streak">0</span>
+            </div>
+        </div>
+
+        <div class="records-section">
+            <h3>📅 최근 기록</h3>
+            <div id="recent-games" class="recent-games">
+                <p style="text-align: center; color: var(--tip-color); font-size: 0.9rem;">기록 없음</p>
+            </div>
         </div>
 
         <button onclick="clearAllRecords()" style="
@@ -1432,14 +1487,24 @@
                 return;
             }
             const won = statusBar.dataset.won === 'true';
-            if (won && !window.__minesweeperWinShown) {
-                window.__minesweeperWinShown = true;
+            const gameOver = statusBar.dataset.gameOver === 'true';
+            
+            // 승리 또는 패배 시 통계 업데이트 (한 번만)
+            if ((won || gameOver) && !window.__minesweeperStatsSaved) {
+                window.__minesweeperStatsSaved = true;
                 checkAndSaveBestTime();
-                launchConfetti();
+                
+                // 승리 시 꽃가루 효과
+                if (won) {
+                    launchConfetti();
+                }
             }
-            if (!won) {
-                window.__minesweeperWinShown = false;
+            
+            // 새 게임 시작 시 플래그 리셋
+            if (!won && !gameOver) {
+                window.__minesweeperStatsSaved = false;
             }
+            
             updateEndModal();
         }
 
@@ -1529,12 +1594,121 @@
         function getStats() {
             const total = parseInt(localStorage.getItem('minesweeper_total_games') || '0', 10);
             const wins = parseInt(localStorage.getItem('minesweeper_total_wins') || '0', 10);
-            return { total, wins };
+            const currentStreak = parseInt(localStorage.getItem('minesweeper_current_streak') || '0', 10);
+            const bestStreak = parseInt(localStorage.getItem('minesweeper_best_streak') || '0', 10);
+            return { total, wins, currentStreak, bestStreak };
         }
 
         function incrementStat(key) {
             const current = parseInt(localStorage.getItem(key) || '0', 10);
             localStorage.setItem(key, String(current + 1));
+        }
+
+        function getAverageTime(difficulty) {
+            const key = `minesweeper_times_${difficulty}`;
+            const timesStr = localStorage.getItem(key);
+            if (!timesStr) return null;
+            
+            const times = JSON.parse(timesStr);
+            if (times.length === 0) return null;
+            
+            const sum = times.reduce((a, b) => a + b, 0);
+            return Math.floor(sum / times.length);
+        }
+
+        function addTimeRecord(difficulty, seconds) {
+            const key = `minesweeper_times_${difficulty}`;
+            const timesStr = localStorage.getItem(key);
+            let times = timesStr ? JSON.parse(timesStr) : [];
+            
+            times.push(seconds);
+            // 최근 20개만 유지
+            if (times.length > 20) {
+                times = times.slice(-20);
+            }
+            
+            localStorage.setItem(key, JSON.stringify(times));
+        }
+
+        function addRecentGame(difficulty, won, seconds) {
+            console.log('addRecentGame 실행:', { difficulty, won, seconds });
+            const key = 'minesweeper_recent_games';
+            const gamesStr = localStorage.getItem(key);
+            let games = gamesStr ? JSON.parse(gamesStr) : [];
+            
+            games.unshift({
+                difficulty,
+                won,
+                seconds,
+                timestamp: Date.now()
+            });
+            
+            // 최근 10개만 유지
+            if (games.length > 10) {
+                games = games.slice(0, 10);
+            }
+            
+            localStorage.setItem(key, JSON.stringify(games));
+            console.log('localStorage 저장 완료, 총', games.length, '개');
+            
+            // 즉시 UI 업데이트
+            updateRecentGames();
+        }
+
+        function updateRecentGames() {
+            const container = document.getElementById('recent-games');
+            if (!container) {
+                return;
+            }
+            
+            const key = 'minesweeper_recent_games';
+            const gamesStr = localStorage.getItem(key);
+            const games = gamesStr ? JSON.parse(gamesStr) : [];
+            
+            if (games.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: var(--tip-color); font-size: 0.9rem;">기록 없음</p>';
+                return;
+            }
+            
+            const diffIcons = {
+                'easy': '🟢',
+                'medium': '🟡',
+                'hard': '🔴',
+                'custom': '⚙️'
+            };
+            
+            container.innerHTML = games.map(game => {
+                const icon = diffIcons[game.difficulty] || '⚪';
+                const result = game.won ? '✓' : '✗';
+                const diffName = game.difficulty.charAt(0).toUpperCase() + game.difficulty.slice(1);
+                const time = formatElapsed(game.seconds);
+                
+                return `
+                    <div class="recent-game-item ${game.won ? 'win' : 'loss'}">
+                        <div class="recent-game-info">
+                            <span>${result}</span>
+                            <span class="recent-game-difficulty">${icon} ${diffName}</span>
+                        </div>
+                        <span class="recent-game-time">${time}</span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function updateStreak(won) {
+            const currentStreak = parseInt(localStorage.getItem('minesweeper_current_streak') || '0', 10);
+            const bestStreak = parseInt(localStorage.getItem('minesweeper_best_streak') || '0', 10);
+            
+            if (won) {
+                const newStreak = currentStreak + 1;
+                localStorage.setItem('minesweeper_current_streak', String(newStreak));
+                
+                if (newStreak > bestStreak) {
+                    localStorage.setItem('minesweeper_best_streak', String(newStreak));
+                }
+            } else {
+                localStorage.setItem('minesweeper_current_streak', '0');
+            }
         }
 
         function updateRecordsPanel() {
@@ -1559,6 +1733,8 @@
             const totalElem = document.getElementById('stat-total');
             const winsElem = document.getElementById('stat-wins');
             const winrateElem = document.getElementById('stat-winrate');
+            const streakElem = document.getElementById('stat-streak');
+            const bestStreakElem = document.getElementById('stat-best-streak');
 
             if (totalElem) totalElem.textContent = stats.total;
             if (winsElem) winsElem.textContent = stats.wins;
@@ -1566,6 +1742,11 @@
                 const winrate = stats.total > 0 ? Math.round((stats.wins / stats.total) * 100) : 0;
                 winrateElem.textContent = `${winrate}%`;
             }
+            if (streakElem) streakElem.textContent = stats.currentStreak;
+            if (bestStreakElem) bestStreakElem.textContent = stats.bestStreak;
+            
+            // 최근 게임 업데이트
+            updateRecentGames();
         }
 
         function checkAndSaveBestTime() {
@@ -1576,6 +1757,14 @@
             
             const difficulty = statusBar.dataset.difficulty;
             const won = statusBar.dataset.won === 'true';
+            const gameOver = statusBar.dataset.gameOver === 'true';
+            
+            console.log('checkAndSaveBestTime 호출:', { difficulty, won, gameOver });
+            
+            // 게임이 끝났을 때만 통계 업데이트
+            if (!won && !gameOver) {
+                return;
+            }
             
             // 통계 업데이트
             incrementStat('minesweeper_total_games');
@@ -1583,19 +1772,28 @@
                 incrementStat('minesweeper_total_wins');
             }
             
+            // 연속 승리 업데이트
+            updateStreak(won);
+            
+            const data = readTimerData();
+            let currentSeconds = 0;
+            
+            if (data && data.startTs && data.endTs) {
+                currentSeconds = Math.floor(data.endTs - data.startTs - pauseAccum);
+            }
+            
+            console.log('난이도 체크:', { difficulty, isCustom: difficulty === 'custom', currentSeconds });
+            
+            // 최근 게임 기록 추가 (모든 난이도 포함)
+            console.log('addRecentGame 호출 시도');
+            addRecentGame(difficulty, won, currentSeconds);
+            
             // 커스텀 난이도는 베스트 타임 제외
             if (difficulty === 'custom' || !won) {
                 updateRecordsPanel();
                 return;
             }
             
-            const data = readTimerData();
-            if (!data || !data.startTs || !data.endTs) {
-                updateRecordsPanel();
-                return;
-            }
-            
-            const currentSeconds = Math.floor(data.endTs - data.startTs);
             const bestSeconds = getBestTime(difficulty);
             
             if (bestSeconds === null || currentSeconds < bestSeconds) {
@@ -1824,6 +2022,12 @@
             localStorage.removeItem('minesweeper_best_hard');
             localStorage.removeItem('minesweeper_total_games');
             localStorage.removeItem('minesweeper_total_wins');
+            localStorage.removeItem('minesweeper_current_streak');
+            localStorage.removeItem('minesweeper_best_streak');
+            localStorage.removeItem('minesweeper_times_easy');
+            localStorage.removeItem('minesweeper_times_medium');
+            localStorage.removeItem('minesweeper_times_hard');
+            localStorage.removeItem('minesweeper_recent_games');
 
             // UI 업데이트
             updateRecordsPanel();
