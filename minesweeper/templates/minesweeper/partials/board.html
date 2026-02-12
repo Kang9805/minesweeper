@@ -68,6 +68,16 @@
                 if (!cell) continue;
                 
                 const cellData = state.board_data[r][c];
+                
+                // 깃발 상태 업데이트
+                if (cellData.is_flagged && !cell.classList.contains('flagged')) {
+                    cell.classList.add('flagged');
+                    cell.textContent = '🚩';
+                } else if (!cellData.is_flagged && cell.classList.contains('flagged')) {
+                    cell.classList.remove('flagged');
+                    cell.textContent = '';
+                }
+                
                 if (cellData.is_revealed && !cell.classList.contains('revealed')) {
                     // 공개 상태로 변경
                     const newCell = document.createElement('div');
@@ -123,16 +133,7 @@
             }
         }).then(r => {
             if (r.status === 204) {
-                // 깃발 상태 토글
-                const isFlagged = cell.classList.contains('flagged');
-                if (isFlagged) {
-                    cell.classList.remove('flagged');
-                    cell.textContent = '';
-                } else {
-                    cell.classList.add('flagged');
-                    cell.textContent = '🚩';
-                }
-                // 상태 업데이트
+                // 상태 업데이트 (서버에서 받은 실제 상태로 UI 갱신)
                 return fetch('/api/game-state/', {
                     headers: {
                         'X-CSRFToken': csrfToken
