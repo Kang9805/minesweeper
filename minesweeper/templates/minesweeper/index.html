@@ -7,7 +7,7 @@
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💣</text></svg>">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Black+Ops+One&family=JetBrains+Mono:wght@600;700&family=Rubik:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Black+Ops+One&family=JetBrains+Mono:wght@600;700&family=Jua&family=Rubik:wght@400;600;700;800&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/htmx.org@1.9.10"></script>
     <style>
         :root {
@@ -66,7 +66,9 @@
         }
 
         body {
-            font-family: "Rubik", -apple-system, sans-serif;
+            font-family: "Jua", -apple-system, sans-serif;
+            font-size: 16px;
+            line-height: 1.5;
             background-color: var(--bg-color);
             background-image: 
                 repeating-linear-gradient(
@@ -91,6 +93,7 @@
 
         @media (max-width: 768px) {
             body {
+                font-size: 15px;
                 padding: 10px;
             }
         }
@@ -302,8 +305,9 @@
             color: white;
             font-weight: 600;
             transition: all 0.3s;
-            text-transform: uppercase;
+            text-transform: none;
             letter-spacing: 0.06em;
+            font-family: inherit;
         }
 
         .difficulty-btn:hover {
@@ -1263,7 +1267,7 @@
 
     <!-- 기록 패널 -->
     <aside class="records-panel" id="records-panel">
-        <h2>기록 (Records)</h2>
+        <h2>기록</h2>
         
         <div class="records-section">
             <h3>🏆 베스트 타임 (Best Time)</h3>
