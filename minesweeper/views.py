@@ -217,9 +217,14 @@ def click(request, row, col):
             
             request.session['board'] = board
 
-    # 깃발이 있는 곳은 클릭 무시
-    if revealed[row][col] or flagged[row][col]:
+    # 이미 공개된 칸은 클릭 무시
+    if revealed[row][col]:
         return HttpResponse(status=204)
+    
+    # 깃발이 있는 칸을 클릭하면 깃발 자동 해제 후 공개
+    if flagged[row][col]:
+        flagged[row][col] = False
+        request.session['flagged'] = flagged
 
     if board[row][col] == -1:
         request.session['game_over'] = True
@@ -230,7 +235,7 @@ def click(request, row, col):
     else:
         reveal_logic(board, revealed, flagged, row, col, rows, cols)
         
-        # 승리 조건 체크
+        # 승리 조건 체크: 모든 안전한 칸을 공개하면 승리
         revealed_count = sum(row.count(True) for row in revealed)
         if revealed_count == (rows * cols) - request.session['mines']:
             request.session['won'] = True
@@ -263,25 +268,12 @@ def flag(request, row, col):
 
     request.session['flagged'] = flagged
 
-    # 추가 승리 체크: 모든 비지뢰 칸이 공개되었거나 모든 지뢰가 정확히 깃발로 표시되었을 때
+    # 승리 체크: 모든 안전한 칸을 공개하면 승리
     rows = request.session.get('rows')
     cols = request.session.get('cols')
     board = request.session.get('board')
-    # 공개된 칸 수로 승리 판정
     revealed_count = sum(r.count(True) for r in request.session['revealed'])
     if revealed_count == (rows * cols) - mines:
-        request.session['won'] = True
-
-    # 모든 지뢰가 깃발로 표시되었는지 확인
-    all_mines_flagged = True
-    for r in range(rows):
-        for c in range(cols):
-            if board[r][c] == -1 and not request.session['flagged'][r][c]:
-                all_mines_flagged = False
-                break
-        if not all_mines_flagged:
-            break
-    if all_mines_flagged and sum(row.count(True) for row in request.session['flagged']) == mines:
         request.session['won'] = True
 
     if request.session.get('won') and not request.session.get('end_time'):
