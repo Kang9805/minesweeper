@@ -1,4 +1,4 @@
-<div class="status-bar" id="status-bar" role="status" aria-live="polite" data-won="{{ won|yesno:'true,false' }}" data-game-over="{{ game_over|yesno:'true,false' }}" data-start-ts="{{ start_time|default_if_none:'' }}" data-end-ts="{{ end_time|default_if_none:'' }}" data-difficulty="{{ difficulty }}" {% if not board_data %}hidden{% endif %}>
+<div class="status-bar" id="status-bar" role="status" aria-live="polite" data-game-id="{{ game_id }}" data-won="{{ won|yesno:'true,false' }}" data-game-over="{{ game_over|yesno:'true,false' }}" data-start-ts="{{ start_time|default_if_none:'' }}" data-end-ts="{{ end_time|default_if_none:'' }}" data-difficulty="{{ difficulty }}" {% if not board_data %}hidden{% endif %}>
     <span>
         {% if game_over %}💥 게임 오버
         {% elif won %}🎉 승리
@@ -13,6 +13,9 @@
         </button>
     </span>
     <span class="status-actions">
+        <button id="hint-btn" class="hint-btn" onclick="useHint()" title="힌트 사용" aria-label="힌트 사용">
+            💡 <span id="hint-count">0</span>
+        </button>
         {% if difficulty == 'custom' %}
             <a href="{% url 'new_game_custom' rows cols mines %}"
                hx-get="{% url 'new_game_custom' rows cols mines %}"

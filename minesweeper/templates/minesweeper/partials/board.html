@@ -1,7 +1,9 @@
 {% for row in board_data %}
     {% for cell in row %}
         {% if cell.is_revealed %}
-            <div class="cell revealed {% if cell.is_mine %}mine{% endif %} {% if cell.value %}color-{{ cell.value }}{% endif %}">
+            <div class="cell revealed {% if cell.is_mine %}mine{% endif %} {% if cell.value %}color-{{ cell.value }}{% endif %}"
+                 data-row="{{ cell.row }}"
+                 data-col="{{ cell.col }}">
                 {% if cell.is_mine %}💣{% else %}{{ cell.value }}{% endif %}
             </div>
         {% else %}

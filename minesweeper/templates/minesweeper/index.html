@@ -486,6 +486,36 @@
             border-color: rgba(255, 200, 0, 0.6);
         }
 
+        .hint-btn {
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 6px;
+            color: white;
+            cursor: pointer;
+            padding: 4px 8px;
+            font-size: 14px;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            font-weight: 600;
+        }
+
+        .hint-btn:hover:not(:disabled) {
+            background: rgba(255, 255, 255, 0.25);
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+
+        .hint-btn:active:not(:disabled) {
+            transform: scale(0.95);
+        }
+
+        .hint-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
         @media (max-width: 768px) {
             .status-timer {
                 font-size: 0.9rem;
@@ -1410,6 +1440,128 @@
     <p style="margin-top: 15px; color: var(--tip-color); font-size: 0.9rem;" id="tip-text">Tip: 오른쪽 클릭으로 🚩를 꽂으세요!</p>
 
     <script>
+        // 힌트 함수들 (early definition)
+        function getHintCount(difficulty) {
+            const key = `minesweeper_hints_${difficulty}`;
+            const value = localStorage.getItem(key);
+            return parseInt(value || '0', 10);
+        }
+
+        function setHintCount(difficulty, count) {
+            const key = `minesweeper_hints_${difficulty}`;
+            localStorage.setItem(key, String(Math.max(0, count)));
+            updateHintButton();
+        }
+
+        function initHints() {
+            const statusBar = document.getElementById('status-bar');
+            if (!statusBar) return;
+            
+            const difficulty = statusBar.dataset.difficulty;
+            const gameId = statusBar.dataset.gameId || difficulty + '_' + Date.now();
+            const lastGameId = localStorage.getItem('minesweeper_last_game_id');
+            
+            // 새 게임일 때만 힌트 초기화
+            if (gameId !== lastGameId) {
+                const key = `minesweeper_hints_${difficulty}`;
+                let defaultHints = 0;
+                if (difficulty === 'easy') {
+                    defaultHints = 5;
+                } else if (difficulty === 'medium') {
+                    defaultHints = 3;
+                } else if (difficulty === 'hard') {
+                    defaultHints = 1;
+                }
+                localStorage.setItem(key, String(defaultHints));
+                localStorage.setItem('minesweeper_last_game_id', gameId);
+            }
+            
+            updateHintButton();
+        }
+
+        function updateHintButton() {
+            const statusBar = document.getElementById('status-bar');
+            if (!statusBar) return;
+            
+            const difficulty = statusBar.dataset.difficulty;
+            const hints = getHintCount(difficulty);
+            
+            const hintCount = document.getElementById('hint-count');
+            const hintBtn = document.getElementById('hint-btn');
+            
+            if (hintCount) hintCount.textContent = hints;
+            if (hintBtn) {
+                const isGameOver = statusBar.dataset.gameOver === 'true';
+                const isWon = statusBar.dataset.won === 'true';
+                hintBtn.disabled = hints <= 0 || isGameOver || isWon;
+            }
+        }
+
+        function useHint() {
+            const statusBar = document.getElementById('status-bar');
+            if (!statusBar) return;
+            
+            const difficulty = statusBar.dataset.difficulty;
+            const hints = getHintCount(difficulty);
+            
+            if (hints <= 0) {
+                alert('더 이상 힌트가 없습니다!');
+                return;
+            }
+            
+            // 버튼 비활성화 (중복 클릭 방지)
+            const hintBtn = document.getElementById('hint-btn');
+            if (hintBtn) hintBtn.disabled = true;
+            
+            // 서버에 힌트 요청
+            fetch('/hint/', {
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
+                }
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (!data.success) {
+                    if (hintBtn) hintBtn.disabled = false;
+                    return;
+                }
+                
+                // 해당 셀 DOM 업데이트
+                const cell = document.querySelector(`[data-row="${data.row}"][data-col="${data.col}"]`);
+                if (cell) {
+                    cell.classList.add('revealed');
+                    cell.classList.remove('hidden', 'flagged');
+                    cell.textContent = data.value > 0 ? data.value : '';
+                    
+                    // color 클래스 추가
+                    cell.className = 'cell revealed';
+                    if (data.value > 0) {
+                        cell.classList.add(`color-${data.value}`);
+                    }
+                }
+                
+                // 힌트 개수 감소 (서버 요청 성공 후)
+                setHintCount(difficulty, hints - 1);
+                
+                // 승리 체크
+                if (data.won) {
+                    setTimeout(() => {
+                        statusBar.dataset.won = 'true';
+                        statusBar.dataset.gameOver = 'true';
+                        updateHintButton();
+                        finishGame(true);
+                    }, 300);
+                } else {
+                    // 버튼 다시 활성화
+                    if (hintBtn) setTimeout(() => updateHintButton(), 100);
+                }
+            })
+            .catch(e => {
+                console.error('Hint error:', e);
+                if (hintBtn) hintBtn.disabled = false;
+            });
+        }
+
         // 모바일 환경 감지
         function isMobile() {
             return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
@@ -1422,6 +1574,8 @@
 
         // 롱프레스 기능 (모바일)
         document.addEventListener('DOMContentLoaded', function() {
+            initHints();
+            
             const cells = document.querySelectorAll('.cell:not(.revealed)');
             let pressTimers = new Map();
 
@@ -2167,6 +2321,7 @@
                 checkWinState();
                 initTimer();
                 updateRecordsPanel();
+                initHints();
                 
                 // 일시 정지 버튼 이벤트 재연결
                 const pauseBtn = document.getElementById('pause-btn');
@@ -2179,6 +2334,7 @@
                 checkWinState();
                 initTimer();
                 updateRecordsPanel();
+                initHints();
                 
                 // 일시 정지 버튼 이벤트 재연결
                 const pauseBtn = document.getElementById('pause-btn');
@@ -2194,6 +2350,7 @@
         checkWinState();
         initTimer();
         updateRecordsPanel();
+        initHints();
         
         // 일시 정지 버튼 이벤트 연결
         const pauseBtn = document.getElementById('pause-btn');
