@@ -65,6 +65,7 @@ def get_game_context(request):
         'start_time': start_time,
         'end_time': end_time,
         'elapsed_seconds': elapsed_seconds,
+        'game_id': request.session.get('game_id', ''),
     }
 
 # HTMX 전용 응답 처리 함수
@@ -137,6 +138,9 @@ def new_game(request, difficulty=None, rows=10, cols=10, mines=10):
                     board[nr][nc] += 1
                     
     # 세션 초기화
+    import uuid
+    game_id = str(uuid.uuid4())
+    
     request.session['board'] = board
     request.session['revealed'] = [[False for _ in range(cols)] for _ in range(rows)]
     request.session['flagged'] = [[False for _ in range(cols)] for _ in range(rows)]
@@ -149,6 +153,10 @@ def new_game(request, difficulty=None, rows=10, cols=10, mines=10):
     request.session['start_time'] = None
     request.session['end_time'] = None
     request.session['first_click_done'] = False
+    request.session['game_id'] = game_id
+    
+    # 난이도별 힌트 개수 설정 (클라이언트 localStorage에서 관리)
+    # 초급: 5, 중급: 3, 고급: 1, 커스텀: 0
     
     # HTMX 요청이면 전체 in-game 컨테이너를 반환하여 화면 전환합니다
     if request.headers.get('HX-Request'):
@@ -323,3 +331,70 @@ def reveal_logic(board, revealed, flagged, row, col, rows, cols):
                 nr, nc = row + dr, col + dc
                 if 0 <= nr < rows and 0 <= nc < cols:
                     reveal_logic(board, revealed, flagged, nr, nc, rows, cols)
+
+def hint(request):
+    """힌트 기능: 공개되지 않은 안전한 칸 1개 자동 공개"""
+    from django.http import JsonResponse
+    
+    if request.session.get('game_over', False) or request.session.get('won', False):
+        return JsonResponse({'success': False}, status=400)
+
+    if request.session.get('start_time') is None:
+        request.session['start_time'] = time.time()
+        request.session['end_time'] = None
+
+    board = request.session.get('board')
+    revealed = request.session.get('revealed')
+    flagged = request.session.get('flagged')
+    rows = request.session.get('rows', 10)
+    cols = request.session.get('cols', 10)
+
+    if not board or not revealed:
+        return JsonResponse({'success': False}, status=400)
+
+    # 공개되지 않은 안전한 칸 찾기
+    safe_cells = []
+    for r in range(rows):
+        for c in range(cols):
+            if not revealed[r][c] and not flagged[r][c] and board[r][c] != -1:
+                safe_cells.append((r, c))
+
+    if not safe_cells:
+        return JsonResponse({'success': False}, status=400)
+
+    # 랜덤으로 1개 선택 후 공개
+    import random
+    hint_row, hint_col = random.choice(safe_cells)
+    reveal_logic(board, revealed, flagged, hint_row, hint_col, rows, cols)
+
+    request.session['board'] = board
+    request.session['revealed'] = revealed
+    request.session.modified = True
+
+    # 승리 체크
+    revealed_count = sum(r.count(True) for r in revealed)
+    won = False
+    if revealed_count == (rows * cols) - request.session['mines']:
+        request.session['won'] = True
+        won = True
+
+    if request.session.get('won') and not request.session.get('end_time'):
+        request.session['end_time'] = time.time()
+
+    # 공개된 칸의 주변 지뢰 개수 계산
+    mine_count = 0
+    for dr in [-1, 0, 1]:
+        for dc in [-1, 0, 1]:
+            if dr == 0 and dc == 0:
+                continue
+            nr, nc = hint_row + dr, hint_col + dc
+            if 0 <= nr < rows and 0 <= nc < cols and board[nr][nc] == -1:
+                mine_count += 1
+
+    return JsonResponse({
+        'success': True,
+        'row': hint_row,
+        'col': hint_col,
+        'value': mine_count,
+        'won': won
+    })
