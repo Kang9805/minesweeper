@@ -12,7 +12,6 @@ DIFFICULTY_SETTINGS = {
     'hard': {'rows': 16, 'cols': 16, 'mines': 40},
 }
 
-# 공통 데이터 포맷팅 헬퍼 함수
 def get_game_context(request):
     if 'board' not in request.session:
         return None
@@ -36,7 +35,6 @@ def get_game_context(request):
     if start_time is not None:
         elapsed_seconds = int((end_time or now_ts) - start_time)
     
-    # 현재 꽂힌 깃발 수 계산
     current_flags = sum(row.count(True) for row in flagged)
     
     board_data = []
@@ -68,16 +66,14 @@ def get_game_context(request):
         'game_id': request.session.get('game_id', ''),
     }
 
-# HTMX 전용 응답 처리 함수
 def render_game_response(request):
     context = get_game_context(request)
     if not context:
         return redirect('new_game')
         
-    # 게임 보드 렌더링
     board_html = render_to_string('minesweeper/partials/board.html', context)
     
-    # 상태 바를 OOB로 업데이트 (outerHTML 교체로 hidden/aria/data 속성까지 갱신)
+    # OOB로 상태바 outerHTML 교체
     status_bar = render_to_string('minesweeper/partials/status-bar.html', context)
     if '<div' in status_bar:
         status_bar_oob = status_bar.replace('<div', '<div hx-swap-oob="outerHTML"', 1)
@@ -90,7 +86,6 @@ def render_game_response(request):
 def index(request):
     context = get_game_context(request)
     if not context:
-        # 세션이 없으면 세션에 저장된 난이도 값 또는 기본값으로 초기화
         context = {
             'board_data': [],
             'rows': request.session.get('rows', 10),
@@ -103,13 +98,11 @@ def index(request):
     return render(request, 'minesweeper/index.html', context)
 
 def new_game(request, difficulty=None, rows=10, cols=10, mines=10):
-    # 난이도로부터 설정 로드
     if difficulty and difficulty in DIFFICULTY_SETTINGS:
         settings = DIFFICULTY_SETTINGS[difficulty]
         rows = settings['rows']
         cols = settings['cols']
         mines = settings['mines']
-    # POST 요청으로부터 커스텀 설정 로드 (폼 제출)
     elif request.method == 'POST':
         rows = int(request.POST.get('rows', 10))
         cols = int(request.POST.get('cols', 10))
@@ -122,7 +115,6 @@ def new_game(request, difficulty=None, rows=10, cols=10, mines=10):
             )
         mines = min(mines, max_mines)
 
-    # 지뢰판 생성 로직
     board = [[0 for _ in range(cols)] for _ in range(rows)]
     mine_positions = set()
     while len(mine_positions) < mines:
@@ -137,7 +129,6 @@ def new_game(request, difficulty=None, rows=10, cols=10, mines=10):
                 if 0 <= nr < rows and 0 <= nc < cols and board[nr][nc] != -1:
                     board[nr][nc] += 1
                     
-    # 세션 초기화
     import uuid
     game_id = str(uuid.uuid4())
     
@@ -155,13 +146,8 @@ def new_game(request, difficulty=None, rows=10, cols=10, mines=10):
     request.session['first_click_done'] = False
     request.session['game_id'] = game_id
     
-    # 난이도별 힌트 개수 설정 (클라이언트 localStorage에서 관리)
-    # 초급: 5, 중급: 3, 고급: 1, 커스텀: 0
-    
-    # HTMX 요청이면 전체 in-game 컨테이너를 반환하여 화면 전환합니다
     if request.headers.get('HX-Request'):
         context = get_game_context(request)
-        # render full in-game partial (status bar + board area)
         play_html = render_to_string('minesweeper/partials/game-play.html', context)
         return HttpResponse(play_html)
     
@@ -180,11 +166,10 @@ def click(request, row, col):
     flagged = request.session['flagged']
     rows, cols = request.session['rows'], request.session['cols']
     
-    # 첫 클릭 안전 보장: 첫 클릭 위치와 주변 3x3 영역에 지뢰가 없도록 재배치
+    # 첫 클릭 안전 보장: 클릭 위치 및 주변 3x3 영역 지뢰 재배치
     if not request.session.get('first_click_done', False):
         request.session['first_click_done'] = True
         
-        # 클릭한 위치와 주변 칸 좌표 수집
         safe_positions = set()
         for dr in [-1, 0, 1]:
             for dc in [-1, 0, 1]:
@@ -192,17 +177,14 @@ def click(request, row, col):
                 if 0 <= nr < rows and 0 <= nc < cols:
                     safe_positions.add((nr, nc))
         
-        # 현재 지뢰 위치 수집
         mine_positions = set()
         for r in range(rows):
             for c in range(cols):
                 if board[r][c] == -1:
                     mine_positions.add((r, c))
         
-        # 안전 영역에 있는 지뢰를 다른 곳으로 이동
         mines_to_move = mine_positions & safe_positions
         if mines_to_move:
-            # 가능한 빈 칸 찾기
             all_positions = {(r, c) for r in range(rows) for c in range(cols)}
             available_positions = list(all_positions - mine_positions - safe_positions)
             
@@ -212,11 +194,9 @@ def click(request, row, col):
                     mine_positions.remove(old_pos)
                     mine_positions.add(new_pos)
             
-            # 보드 재생성
             board = [[0 for _ in range(cols)] for _ in range(rows)]
             for r, c in mine_positions:
                 board[r][c] = -1
-                # 주변 숫자 업데이트
                 for dr in [-1, 0, 1]:
                     for dc in [-1, 0, 1]:
                         nr, nc = r + dr, c + dc
@@ -225,11 +205,9 @@ def click(request, row, col):
             
             request.session['board'] = board
 
-    # 이미 공개된 칸은 클릭 무시
     if revealed[row][col]:
         return HttpResponse(status=204)
     
-    # 깃발이 있는 칸을 클릭하면 깃발 자동 해제 후 공개
     if flagged[row][col]:
         flagged[row][col] = False
         request.session['flagged'] = flagged
@@ -243,7 +221,6 @@ def click(request, row, col):
     else:
         reveal_logic(board, revealed, flagged, row, col, rows, cols)
         
-        # 승리 조건 체크: 모든 안전한 칸을 공개하면 승리
         revealed_count = sum(row.count(True) for row in revealed)
         if revealed_count == (rows * cols) - request.session['mines']:
             request.session['won'] = True
@@ -269,14 +246,13 @@ def flag(request, row, col):
     current_flags = sum(row.count(True) for row in flagged)
 
     if not revealed[row][col]:
-        if flagged[row][col]: # 이미 깃발이 있으면 해제
+        if flagged[row][col]:
             flagged[row][col] = False
-        elif current_flags < mines: # 깃발이 없고 갯수 여유가 있으면 설치
+        elif current_flags < mines:
             flagged[row][col] = True
 
     request.session['flagged'] = flagged
 
-    # 승리 체크: 모든 안전한 칸을 공개하면 승리
     rows = request.session.get('rows')
     cols = request.session.get('cols')
     board = request.session.get('board')
@@ -319,9 +295,7 @@ def game_state(request):
         'elapsed_seconds': context['elapsed_seconds'],
     })
 
-# 재귀적으로 빈 칸을 열어주는 로직 (함수명 중복 방지를 위해 _logic 추가)
 def reveal_logic(board, revealed, flagged, row, col, rows, cols):
-    # 이미 공개되었거나 깃발이 꽂혀있으면 무시
     if revealed[row][col] or flagged[row][col]:
         return
     revealed[row][col] = True
@@ -352,7 +326,6 @@ def hint(request):
     if not board or not revealed:
         return JsonResponse({'success': False}, status=400)
 
-    # 공개되지 않은 안전한 칸 찾기
     safe_cells = []
     for r in range(rows):
         for c in range(cols):
@@ -362,7 +335,6 @@ def hint(request):
     if not safe_cells:
         return JsonResponse({'success': False}, status=400)
 
-    # 랜덤으로 1개 선택 후 공개
     import random
     hint_row, hint_col = random.choice(safe_cells)
     reveal_logic(board, revealed, flagged, hint_row, hint_col, rows, cols)
@@ -371,7 +343,6 @@ def hint(request):
     request.session['revealed'] = revealed
     request.session.modified = True
 
-    # 승리 체크
     revealed_count = sum(r.count(True) for r in revealed)
     won = False
     if revealed_count == (rows * cols) - request.session['mines']:
@@ -381,7 +352,6 @@ def hint(request):
     if request.session.get('won') and not request.session.get('end_time'):
         request.session['end_time'] = time.time()
 
-    # 공개된 칸의 주변 지뢰 개수 계산
     mine_count = 0
     for dr in [-1, 0, 1]:
         for dc in [-1, 0, 1]:
