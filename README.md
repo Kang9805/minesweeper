@@ -25,33 +25,30 @@ Django + HTMX 기반 웹 지뢰찾기 서비스입니다.
 
 ## 로컬 실행
 
-1) 가상환경 활성화
+1) 가상환경 생성 및 활성화
 
 ```bash
-source .venv/bin/activate
+python -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
 ```
 
 2) 의존성 설치
 
 ```bash
-pip install -e .
+pip install -r requirements.txt
 ```
 
-3) DB 마이그레이션
-
-```bash
-python manage.py migrate
-```
-
-4) 개발 서버 실행
+3) 개발 서버 실행
 
 ```bash
 python manage.py runserver
 ```
 
-5) 접속
+4) 브라우저에서 접속
 
-- http://127.0.0.1:8000
+```
+http://127.0.0.1:8000/
+```
 
 ## 조작 방법
 
@@ -81,7 +78,6 @@ manage.py
 
 ## 향후 개선 아이디어
 
-- 로컬 랭킹(닉네임 + TOP N)
 - 업적/배지 시스템
 - 사운드 효과
 - 애니메이션 강화
